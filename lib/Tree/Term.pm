@@ -14,6 +14,8 @@ use Data::Table::Text qw(:all);
 use Test::More qw(no_plan);
 use feature qw(say state current_sub);
 
+my $log = q(/home/phil/perl/cpan/TreeTerm/lib/Tree/zzz.txt);                    # Log file
+
 sub new($@)                                                                     # New term
  {my ($operator, @operands) = @_;                                               # Parameters
   my $t = genHash(__PACKAGE__,                                                  # Term
@@ -276,7 +278,7 @@ sub parse(@)                                                                    
 
   lll "DDDD\n", dump([@s]);
   @s == 1 or confess "Incomplete expression";
-  owf(q(/home/phil/perl/cpan/TreeTerm/lib/Tree/zzz.txt), flat $s[-1]);
+  owf($log, flat $s[-1]) if -e $log;                                            # Save result if testing
   $s[0]
  } # parse
 
