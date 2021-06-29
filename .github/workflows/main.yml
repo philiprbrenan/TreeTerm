@@ -1,0 +1,35 @@
+# Test Tree::Term 2021-06-30 at 00:34:36
+
+name: Test
+
+on:
+  push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: 'main'
+
+    - name: Install Data::Table::Text
+      run: |
+        sudo cpan install -T Data::Table::Text
+
+    - name: Install Digest::SHA1
+      run: |
+        sudo cpan install -T Digest::SHA1
+
+    - name: Install Test::Most
+      run: |
+        sudo cpan install -T Test::Most
+
+    - name: Install tree
+      run: |
+        sudo apt-get install -y tree
+
+    - name: Test
+      run: |
+        perl lib/Tree/Term.pm
