@@ -337,11 +337,19 @@ ok test [qw(v1 a2 v3 d4 v4)], <<END;
        v3    v4
 END
 
+ok test [qw(v1 a2 v3 s s s  v4 a5 v6 s s)], <<END;
+    a2
+ v1       s
+       v3          s
+            empty3          s
+                     empty3      a5
+                              v4       s
+                                    v6   empty3
+END
+
 ok test [qw(b B)], <<END;
  empty1
 END
-
-#latest:
 
 ok test [qw(b b B B)], <<END;
  empty1
@@ -354,6 +362,12 @@ END
 ok test [qw(b b v1 a2 v3 B B)], <<END;
     a2
  v1    v3
+END
+
+ok test [qw(b b v1 a2 v3 d4 v5 B B)], <<END;
+    a2
+ v1       d4
+       v3    v5
 END
 exit;
 
