@@ -54,8 +54,7 @@ sub parse(@)                                                                    
 
   my sub term($)                                                                # Convert the longest possible expression on top of the stack into a term
    {my ($code) = @_;                                                            # Parameters
-#   my $n = scalar(@s);
-#   lll "TTTT $n \n", dump([@s]);
+    #lll "TTTT ", scalar(@s), "\n", dump([@s]);
 
     if (@s >= 3)                                                                # Go for term infix-operator term
      {my ($r, $d, $l) = reverse @s;
@@ -82,6 +81,11 @@ sub parse(@)                                                                    
        {pop  @s for 1..2;
         push @s, $r;
         return 1;                                                               # B2
+       }
+      if (test($l,'p') and test($r, 't'))                                       # Prefix, term
+       {pop  @s for 1..2;
+        push @s, new $l, $r;
+        return 1;
        }
      }
 
@@ -140,7 +144,7 @@ END
        },
 
       b => sub                                                                  # Open
-       {check("bd");  #as
+       {check("bdp");  #as
         push @s, $e;
        },
 
@@ -153,7 +157,7 @@ END
        },
 
       d => sub                                                                  # Infix but not assign or semi-colon
-       {check("t"); #Bqv
+       {check("t");   #Bqv
         push @s, $e;
        },
 
@@ -163,7 +167,7 @@ END
        },
 
       q => sub                                                                  # Post fix
-       {check("t"); #Bqv
+       {check("t");   #Bqv
         if (test($s[-1], 't'))                                                  # Post fix operator applied to a term
          {my $p = pop @s;
           push @s, new $e, $p;
@@ -567,7 +571,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 23;
+ {plan tests => 28;
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -720,6 +724,50 @@ ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)],
  p1    p4    p6
  v1    p3    p5
        v2    v3
+END
+
+ok T [qw(b b v1 B s B s)], <<END;
+ v1
+END
+
+ok T [qw(v1 q1 s)], <<END;
+ q1
+ v1
+END
+
+ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
+ q6
+ q5
+ q4
+ q3
+ q2
+ q1
+ v1
+END
+
+#      p => sub                                                                  # Prefix
+#       {check("bdp"); #as
+
+
+ok T [qw(p1 p2 b v1 B)], <<END;
+ p1
+ p2
+ v1
+END
+
+ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
+       q6
+       q5
+       p1
+       p2
+       q4
+       q3
+       p3
+       p4
+    d1
+ p5    q2
+ p6    q1
+ v1    v2
 END
 
 #lll "AAAA", dump(\%used);
