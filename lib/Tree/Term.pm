@@ -275,7 +275,7 @@ sub parse(@)                                                                    
 
     if ($e =~ m(s))                                                             # Semi colon
      {check("bBqstv");
-      if ($s =~ m(\As))                                                         # Insert an empty element between two consecutive semicolons
+      if ($s =~ m(\A(s|b)))                                                         # Insert an empty element between two consecutive semicolons
        {push @s, new 'empty5';
         1 while term;
        }
@@ -434,5 +434,10 @@ ok test [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
 END
 
 ok test [qw(b s B)], <<END;
- empty2
+ empty5
+END
+
+ok test [qw(b s s B)], <<END;
+        s
+ empty5   empty5
 END
