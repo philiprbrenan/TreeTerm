@@ -371,7 +371,7 @@ Parse an expression.
 B<Example:>
 
 
-  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END;
+  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END; 
       d3
    q2       d4
    q1    q4    q6
@@ -380,7 +380,7 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-
+  
 
 =head1 Print
 
@@ -397,7 +397,7 @@ Print the terms in the expression as a tree from left right to make it easier to
 B<Example:>
 
 
-  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
+  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;        
       d3
    q2       d4
    q1    q4    q6
@@ -406,7 +406,7 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-
+  
 
 
 =head1 Hash Definitions
@@ -436,6 +436,55 @@ Operator to be applied to one or more operands.
 =head4 up
 
 Parent term if this is a sub term.
+
+
+
+=head2 Tree::Term::Codes Definition
+
+
+Lexical item codes.
+
+
+
+
+=head3 Output fields
+
+
+=head4 B
+
+Close parenthesis.
+
+=head4 a
+
+Infix operator with priority 2 binding right to left typically used in an assignment.
+
+=head4 b
+
+Open parenthesis.
+
+=head4 d
+
+Infix operator with priority 3 binding left to right typically used in arithmetic.
+
+=head4 p
+
+Monadic prefix operator.
+
+=head4 q
+
+Monadic suffix operator.
+
+=head4 s
+
+Infix operator with priority 1 binding left to right typically used to separate statements.
+
+=head4 t
+
+A term in the expression.
+
+=head4 v
+
+A variable in the expression.
 
 
 
