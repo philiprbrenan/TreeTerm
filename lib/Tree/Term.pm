@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 package Tree::Term;
 use v5.26;
-our $VERSION = 20210630;                                                        # Version
+our $VERSION = 20210631;                                                        # Version
 use warnings FATAL => qw(all);
 use strict;
 use Carp qw(confess cluck);
@@ -149,62 +149,57 @@ sub parse(@)                                                                    
       undef
      };
 
-    if ($e =~ m(a))                                                             # Assign
-     {check("Bqtv");
-      push @s, $e;
-      next;
-     }
+    my %action =                                                                # Action on each lexical item
+     (a => sub                                                                  # Assign
+       {check("Bqtv");
+        push @s, $e;
+       },
 
-    if ($e =~ m(b))                                                             # Open
-     {check("abds");
-      push @s, $e;
-      next;
-     }
+      b => sub                                                                  # Open
+       {check("abds");
+        push @s, $e;
+       },
 
-    if ($e =~ m(B))                                                             # Closing parenthesis
-     {check("abqstv");
-      1 while term;
-      push @s, $e;
-      1 while term;
-      check("bst");
-     }
+      B => sub                                                                  # Closing parenthesis
+       {check("abqstv");
+        1 while term;
+        push @s, $e;
+        1 while term;
+        check("bst");
+       },
 
-    if ($e =~ m(d))                                                             # Infix but not assign or semi-colon
-     {check("Bqtv");
-      push @s, $e;
-      next;
-     }
+      d => sub                                                                  # Infix but not assign or semi-colon
+       {check("Bqtv");
+        push @s, $e;
+       },
 
-    if ($e =~ m(p))                                                             # Prefix
-     {check("abdps");
-      push @s, $e;
-      next;
-     }
+      p => sub                                                                  # Prefix
+       {check("abdps");
+        push @s, $e;
+       },
 
-    if ($e =~ m(q))                                                             # Suffix
-     {check("Bqtv");
-      push @s, $e;
-      term;
-      next;
-     }
+      q => sub                                                                  # Suffix
+       {check("Bqtv");
+        push @s, $e;
+        term;
+       },
 
-    if ($e =~ m(s))                                                             # Semi colon
-     {check("bBqstv");
-      if ($s =~ m(\A(s|b)))                                                     # Insert an empty element between two consecutive semicolons
-       {push @s, new 'empty5';
-       }
-      1 while term;
-      push @s, $e;
-      next;
-     }
+      s => sub                                                                  # Semi colon
+       {check("bBqstv");
+        push @s, new 'empty5' if $s =~ m(\A(s|b));                              # Insert an empty element between two consecutive semicolons
+        1 while term;
+        push @s, $e;
+       },
 
-    if ($e =~ m(v))                                                             # Variable
-     {check("abdps");
-      push @s, $e;
-      term;
-      1 while test("p") and term;
-      next;
-     }
+      v => sub                                                                  # Variable
+       {check("abdps");
+        push @s, $e;
+        term;
+        1 while test("p") and term;
+       },
+     );
+
+    $action{substr($e, 0, 1)}->();                                              # Dispatch the action associated with the lexical item
    }
 
   pop @s while @s > 1 and $s[-1] =~ m(s);                                       # Remove any trailing semi colons
@@ -355,7 +350,7 @@ END
 Create a parse tree from an array of terms representing an expression.
 
 
-Version 20210630.
+Version 20210631.
 
 
 The following sections describe the methods in each functional area of this
