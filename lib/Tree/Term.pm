@@ -571,7 +571,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 28;
+ {plan tests => 31;
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -745,14 +745,17 @@ ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
  v1
 END
 
-#      p => sub                                                                  # Prefix
-#       {check("bdp"); #as
-
-
 ok T [qw(p1 p2 b v1 B)], <<END;
  p1
  p2
  v1
+END
+
+ok T [qw(v1 d1 p1 p2 v2)], <<END;
+    d1
+ v1    p1
+       p2
+       v2
 END
 
 ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
@@ -769,5 +772,21 @@ ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
  p6    q1
  v1    v2
 END
+
+ok T [qw(b v1 B d1 b v2 B)], <<END;
+    d1
+ v1    v2
+END
+
+ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
+    d1
+ q2    v2
+ q1
+ v1
+END
+
+#      d => sub                                                                  # Infix but not assign or semi-colon
+#       {check("t");   #Bqv
+
 
 #lll "AAAA", dump(\%used);
