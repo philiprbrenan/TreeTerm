@@ -302,8 +302,7 @@ sub test                                                                        
  {my ($expression, $expected) = @_;                                             # Expression, expected result
 
   my $got = flat parse(@$expression);
-  return 1 if $got eq $expected;
-  confess $got;
+  $got eq $expected;
  }
 
 eval {goto latest};
@@ -345,6 +344,10 @@ END
 
 ok test [qw(b b B B)], <<END;
  empty1
+END
+
+ok test [qw(b b v1 B B)], <<END;
+ v1
 END
 exit;
 
