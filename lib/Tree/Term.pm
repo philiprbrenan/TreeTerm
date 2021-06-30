@@ -109,7 +109,7 @@ sub parse(@)                                                                    
 
   my sub term()                                                                 # Convert the longest possible expression on top of the stack into a term
    {my $n = scalar(@s);
-    lll "TTTT $n \n", dump([@s]);
+#   lll "TTTT $n \n", dump([@s]);
 
     my sub test($*)                                                             # Check the type of an item in the stack
      {my ($item, $type) = @_;                                                   # Item to test, expected type of item
@@ -180,7 +180,6 @@ sub parse(@)                                                                    
        {@s = (new('empty4'), $t);
         return 1;
        }
-lll "YYYY ", cluck;
      }
     undef                                                                       # No move made
    };
@@ -249,7 +248,7 @@ lll "YYYY ", cluck;
      {check("abqstv");
       push @s, $e;
       1 while term;
-      check("b");
+      check("bt");
       #pop @s;
      }
 
@@ -338,9 +337,13 @@ ok test [qw(v1 a2 v3 d4 v4)], <<END;
        v3    v4
 END
 
+ok test [qw(b B)], <<END;
+ empty1
+END
+
 #latest:
 
-ok test [qw(b B)], <<END;
+ok test [qw(b b B B)], <<END;
  empty1
 END
 exit;
