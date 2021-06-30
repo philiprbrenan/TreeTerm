@@ -388,7 +388,7 @@ Parse an expression.
 B<Example:>
 
 
-  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END;
+  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END; 
       d3
    q2       d4
    q1    q4    q6
@@ -397,7 +397,7 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-
+  
 
 =head1 Print
 
@@ -414,7 +414,7 @@ Print the terms in the expression as a tree from left right to make it easier to
 B<Example:>
 
 
-  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
+  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;        
       d3
    q2       d4
    q1    q4    q6
@@ -423,10 +423,15 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
+  
+
+
+=head1 Hash Definitions
 
 
 
-=head2 Tree::term Definition
+
+=head2 Tree::Term Definition
 
 
 Description of a term in the expression.
@@ -461,12 +466,12 @@ New term.
   1  $operator  Operator
   2  @operands  Operands.
 
-=head2 depth($expression)
+=head2 depth($term)
 
 Depth of a term in an expression.
 
-     Parameter    Description
-  1  $expression  Term
+     Parameter  Description
+  1  $term      Term
 
 =head2 listTerms($expression)
 
@@ -494,7 +499,7 @@ List the terms in an expression in post order
 This module is written in 100% Pure Perl and, thus, it is easy to read,
 comprehend, use, modify and install via B<cpan>:
 
-  sudo cpan install Tree::term
+  sudo cpan install Tree::Term
 
 =head1 Author
 
@@ -510,6 +515,7 @@ This module is free software. It may be used, redistributed and/or modified
 under the same terms as Perl itself.
 
 =cut
+
 
 
 # Tests and documentation
