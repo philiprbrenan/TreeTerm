@@ -94,8 +94,8 @@ sub parse(@)                                                                    
 
     if (!@s)                                                                    # Empty stack
      {confess <<END =~ s(\n) ( )gsr if !ref($e) and $e !~ m(\A(b|p|s|v));
-Expression must start with a variable or open or a prefix operator or
-a semi-colon.
+Expression must start with a variable or an open parenthesis or a prefix
+operator or a semi-colon.
 END
       if    (test($e, 'v'))                                                     # Single variable
        {@s = (new $e);
@@ -109,44 +109,43 @@ END
       next;
      }
 
-    my $s = $s[-1];                                                             # Stack has data
-
-    my sub type()                                                               # Type of the current stack top
-     {return 't' if ref $s;                                                     # Term on top of stack
+    my sub type($)                                                              # Type of term
+     {my ($s) = @_;                                                             # Term to test
+      return 't' if ref $s;                                                     # Term on top of stack
       substr($s, 0, 1);                                                         # Something other than a term defines its type by its first letter
      };
 
     my sub check($)                                                             # Check that the top of the stack has one of the specified elements
      {my ($types) = @_;                                                         # Possible types to match
-      return 1 if index($types, type) > -1;                                     # Check type allowed
+      return 1 if index($types, type($s[-1])) > -1;                             # Check type allowed
       my @c;
       for my $c(split //, $types)                                               # Translate lexical codes into types
        {push @c, $$codes{$c};
        }
       my $c = join ', ', sort @c;
-      confess qq(Expected $e to follow one of $c at $i but not: $s\n);
+      confess qq(Expected $e to follow one of $c at $i but not: $s[-1]\n);
      };
 
     my sub prev($)                                                              # Check that the second item on the stack contains one of the expected items
      {my ($types) = @_;                                                         # Possible types to match
       return undef unless @s >= 2;                                              # Stack not deep enough so cannot contain any of the specified types
-      return 1 if index($types, ref($s[-2]) ? 't' : substr($s[-2], 0, 1)) > -1;
+      return 1 if index($types, type($s[-2])) > -1;
       undef
      };
 
     my %action =                                                                # Action on each lexical item
      (a => sub                                                                  # Assign
-       {check("Bqtv");
+       {check("t");   #Bv
         push @s, $e;
        },
 
       b => sub                                                                  # Open
-       {check("abds");
+       {check("bd");  #as
         push @s, $e;
        },
 
       B => sub                                                                  # Closing parenthesis
-       {check("abqstv");
+       {check("bst"); #aqv
         1 while term('B1');
         push @s, $e;
         1 while term('B2');
@@ -154,26 +153,26 @@ END
        },
 
       d => sub                                                                  # Infix but not assign or semi-colon
-       {check("Bqtv");
+       {check("t"); #Bqv
         push @s, $e;
        },
 
       p => sub                                                                  # Prefix
-       {check("abdps");
+       {check("bdp"); #as
         push @s, $e;
        },
 
       q => sub                                                                  # Post fix
-       {check("Bqtv");
-        if (test($s, 't'))                                                      # Post fix operator applied to a term
+       {check("t"); #Bqv
+        if (test($s[-1], 't'))                                                  # Post fix operator applied to a term
          {my $p = pop @s;
           push @s, new $e, $p;
          }
        },
 
       s => sub                                                                  # Semi colon
-       {check("bBqstv");
-        push @s, new 'empty5' if $s =~ m(\A(s|b));                              # Insert an empty element between two consecutive semicolons
+       {check("bst"); #Bqv
+        push @s, new 'empty5' if $s[-1] =~ m(\A(s|b));                          # Insert an empty element between two consecutive semicolons
         1 while term('s');
         push @s, $e;
        },
@@ -723,4 +722,4 @@ ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)],
        v2    v3
 END
 
-lll "AAAA", dump(\%used);
+#lll "AAAA", dump(\%used);
