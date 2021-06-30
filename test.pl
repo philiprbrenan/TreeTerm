@@ -1,11 +1,11 @@
-#!/usr/bin/perl -I/home/phil/perl/cpan/TreeMulti/lib/
+#!/usr/bin/perl -I/home/phil/perl/cpan/TreeTerm/lib/
 #-------------------------------------------------------------------------------
-# Test Tree::Multi
+# Test Tree::Term
 # Philip R Brenan at gmail dot com, Appa Apps Ltd, 2021
 #-------------------------------------------------------------------------------
 
 use warnings FATAL => qw(all);
 use strict;
-use Tree::Multi;
+use Tree::Term;
 
-Tree::Multi::test();
+Tree::Term::test();
