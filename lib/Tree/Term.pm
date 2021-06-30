@@ -148,18 +148,18 @@ sub parse(@)                                                                    
         push @s, new $r, $l;
         return 1;
        }
-      if (!ref($l) and !ref($r) and $l =~ m(\Ab) and $r =~ m(\As))              # Open semi-colon implies one intervening empty term
-       {pop @s for 1;
-        push @s, new 'empty2';
-        push @s, $r;
-        return 1;
-       }
-      if (!ref($l) and !ref($r) and $l =~ m(\As) and $r =~ m(\As))              # Semi-colon, semi-colon implies an empty term
-       {pop @s for 1;
-        push @s, new 'empty3';
-        push @s, $r;
-        return 1;
-       }
+#     if (!ref($l) and !ref($r) and $l =~ m(\Ab) and $r =~ m(\As))              # Open semi-colon implies one intervening empty term
+#      {pop @s for 1;
+#       push @s, new 'empty2';
+#       push @s, $r;
+#       return 1;
+#      }
+#     if (!ref($l) and !ref($r) and $l =~ m(\As) and $r =~ m(\As))              # Semi-colon, semi-colon implies an empty term
+#      {pop @s for 1;
+#       push @s, new 'empty3';
+#       push @s, $r;
+#       return 1;
+#      }
       if (!ref($l) and !ref($r) and $l =~ m(\As) and $r =~ m(\AB))              # Semi-colon, close implies remove unneeded semi
        {pop @s for 1..2;
         push @s, $r;
@@ -440,4 +440,15 @@ END
 ok test [qw(b s s B)], <<END;
         s
  empty5   empty5
+END
+
+
+ok test [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END;
+    d3
+ q2       d4
+ q1    q4    q6
+ p2    q3    q5
+ p1    p4    p6
+ v1    p3    p5
+       v2    v3
 END
