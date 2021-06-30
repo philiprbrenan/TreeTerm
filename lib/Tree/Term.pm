@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 package Tree::Term;
 use v5.26;
-our $VERSION = 20210629;                                                        # Version
+our $VERSION = 20210630;                                                        # Version
 use warnings FATAL => qw(all);
 use strict;
 use Carp qw(confess cluck);
@@ -91,6 +91,7 @@ sub parse(@)                                                                    
         return 1;
        }
      }
+
     if (@s >= 1)                                                                # Convert variable to term
      {my ($t) = reverse @s;
       if (test($t, 'v'))                                                        # Single variable
@@ -99,6 +100,7 @@ sub parse(@)                                                                    
         return 1;
        }
      }
+
     if (@s == 1)                                                                # Convert leading semi to empty, semi
      {my ($t) = @s;
       if (test($t,'s'))                                                         # Semi
@@ -106,6 +108,7 @@ sub parse(@)                                                                    
         return 1;
        }
      }
+
     undef                                                                       # No move made
    };
 
@@ -209,7 +212,8 @@ sub parse(@)                                                                    
 
 # lll "EEEE\n", dump([@s]);
   @s == 1 or confess "Incomplete expression";
-  $s[0]
+
+  $s[0]                                                                         # The resulting parse tree
  } # parse
 
 #D1 Print                                                                       # Print a parse tree to make it easy to visualize its structure.
@@ -239,6 +243,7 @@ sub listTerms($)                                                                
      {push @t, $e;                                                              # Operator
      }
    } ->($expression);
+
   @t
  }
 
@@ -285,6 +290,7 @@ sub flat($@)                                                                    
    }
 
   unshift @s, join(' ', @title) if @title;                                      # Add title
+
   join "\n", @s, '';
  }
 
@@ -349,7 +355,7 @@ END
 Create a parse tree from an array of terms representing an expression.
 
 
-Version 20210629.
+Version 20210630.
 
 
 The following sections describe the methods in each functional area of this
