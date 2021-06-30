@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 package Tree::Term;
 use v5.26;
-our $VERSION = 20210631;                                                        # Version
+our $VERSION = 20210632;                                                        # Version
 use warnings FATAL => qw(all);
 use strict;
 use Carp qw(confess cluck);
@@ -17,11 +17,13 @@ use feature qw(say state current_sub);
 
 sub new($@)                                                                     #P New term.
  {my ($operator, @operands) = @_;                                               # Operator, operands.
+
   my $t = genHash(__PACKAGE__,                                                  # Description of a term in the expression.
      operands => @operands ? [@operands] : undef,                               # Operands to which the operator will be applied.
      operator => $operator,                                                     # Operator to be applied to one or more operands.
      up       => undef,                                                         # Parent term if this is a sub term.
    );
+
   $_->up = $t for grep {ref $_} @operands;                                      # Link to parent if possible
 
   $t
