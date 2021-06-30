@@ -1,6 +1,6 @@
 #!/usr/bin/perl -I/home/phil/perl/cpan/DataTableText/lib/
 #-------------------------------------------------------------------------------
-# Create a tree from an array of terms representing an expression.
+# Create a parse tree from an array of terms representing an expression.
 # Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2021
 #-------------------------------------------------------------------------------
 package Tree::term;
@@ -246,6 +246,7 @@ sub parse(@)                                                                    
 
     if ($e =~ m(B))                                                             # Closing parenthesis
      {check("abqstv");
+      1 while term;
       push @s, $e;
       1 while term;
       check("bt");
@@ -348,6 +349,11 @@ END
 
 ok test [qw(b b v1 B B)], <<END;
  v1
+END
+
+ok test [qw(b b v1 a2 v3 B B)], <<END;
+    a2
+ v1    v3
 END
 exit;
 
