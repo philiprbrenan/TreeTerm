@@ -140,12 +140,12 @@ sub parse(@)                                                                    
        }
       if (!ref($l) and ref($r) and $l =~ m(\Ap))                                # Prefix operator applied to a term
        {pop @s for 1..2;
-        push @s, new  $l, $r;
+        push @s, new $l, $r;
         return 1;
        }
       if (!ref($r) and ref($l) and $r =~ m(\Aq))                                # Postfix operator applied to a term
        {pop @s for 1..2;
-        push @s, new $l, $r;
+        push @s, new $r, $l;
         return 1;
        }
       if (!ref($l) and !ref($r) and $l =~ m(\Ab) and $r =~ m(\As))              # Open semi-colon implies one intervening empty term
@@ -289,13 +289,13 @@ sub parse(@)                                                                    
      {check("abdps");
       push @s, $e;
       term;
+      1 while test("p") and term;
       next;
      }
    }
 
 # lll "DDDD\n", dump([@s]);
   pop @s while @s > 1 and $s[-1] =~ m(s);
-# push @s, 's' unless @s and $s[-1] =~ m(s);
   1 while term;                                                                 # Assume three is a semio colon at the end
 # pop @s while @s > 1 and $s[-1] =~ m(s);
 
@@ -382,4 +382,26 @@ ok test [qw(b b v1 a2 v3 d4 v5 B B)], <<END;
     a2
  v1       d4
        v3    v5
+END
+
+ok test [qw(p1 v1)], <<END;
+ p1
+ v1
+END
+
+ok test [qw(p2 p1 v1)], <<END;
+ p2
+ p1
+ v1
+END
+
+ok test [qw(v1 q1)], <<END;
+ q1
+ v1
+END
+
+ok test [qw(v1 q1 q2)], <<END;
+ q2
+ q1
+ v1
 END
