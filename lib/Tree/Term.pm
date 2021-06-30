@@ -186,7 +186,7 @@ sub parse(@)                                                                    
 
   for my $i(keys @e)                                                            # Each input element
    {my $e = $e[$i];
-   lll "AAAA $i $e\n", dump([@s]);
+#   lll "AAAA $i $e\n", dump([@s]);
 
     my sub error($)                                                             # Write an error message
      {my ($m) = @_;                                                             # Error message
@@ -275,8 +275,13 @@ sub parse(@)                                                                    
 
     if ($e =~ m(s))                                                             # Semi colon
      {check("Bqstv");
-      push @s, $e;
+      if ($s =~ m(\As))                                                         # Insert an empty element between two consecutive semicolons
+       {push @s, new 'empty5';
+        1 while term;
+       }
       1 while term;
+      push @s, $e;
+#     1 while term;
       next;
      }
 
@@ -290,10 +295,11 @@ sub parse(@)                                                                    
 
 # lll "DDDD\n", dump([@s]);
   pop @s while @s > 1 and $s[-1] =~ m(s);
+# push @s, 's' unless @s and $s[-1] =~ m(s);
   1 while term;                                                                 # Assume three is a semio colon at the end
-  pop @s while @s > 1 and $s[-1] =~ m(s);
+# pop @s while @s > 1 and $s[-1] =~ m(s);
 
- lll "EEEE\n", dump([@s]);
+# lll "EEEE\n", dump([@s]);
   @s == 1 or confess "Incomplete expression";
   owf($log, $s[-1]->flat) if -e $log;                                           # Save result if testing
   $s[0]
@@ -303,7 +309,9 @@ sub test                                                                        
  {my ($expression, $expected) = @_;                                             # Expression, expected result
 
   my $got = flat parse(@$expression);
-  $got eq $expected;
+  my $r = $got eq $expected;
+  confess "Failed test" unless $r;
+  $r
  }
 
 eval {goto latest};
@@ -318,7 +326,7 @@ END
 
 ok test [qw(s s)], <<END;
         s
- empty4   empty3
+ empty4   empty5
 END
 
 ok test [qw(v1 d2 v3)], <<END;
@@ -331,20 +339,26 @@ ok test [qw(v1 a2 v3)], <<END;
  v1    v3
 END
 
-ok test [qw(v1 a2 v3 d4 v4)], <<END;
+ok test [qw(v1 a2 v3 d4 v5)], <<END;
     a2
  v1       d4
-       v3    v4
+       v3    v5
+END
+
+ok test [qw(v1 a2 v3 d4 v5 s6 v8 a9 v10)], <<END;
+                s6
+    a2                a9
+ v1       d4       v8    v10
+       v3    v5
 END
 
 ok test [qw(v1 a2 v3 s s s  v4 a5 v6 s s)], <<END;
-    a2
- v1       s
-       v3          s
-            empty3          s
-                     empty3      a5
-                              v4       s
-                                    v6   empty3
+                                       s
+                            s            empty5
+                   s             a5
+          s          empty5   v4    v6
+    a2      empty5
+ v1    v3
 END
 
 ok test [qw(b B)], <<END;
@@ -369,47 +383,3 @@ ok test [qw(b b v1 a2 v3 d4 v5 B B)], <<END;
  v1       d4
        v3    v5
 END
-exit;
-
-is_deeply parse(qw(v1 a2 v3 s s s  v4 a5 v6 s s)), [
-  bless({
-    dyad  => "s",
-    left  => bless({ dyad => "a2", left => "v1", right => "v3" }, "Term"),
-    right => bless({ dyad => "a5", left => "v4", right => "v6" }, "Term"),
-  }, "Term"),
-];
-
-is_deeply parse(qw(b b b b v1 d2 v3 B B B B)),
-[bless({ dyad => "d2", left => "v1", right => "v3" }, "Term")];
-
-is_deeply parse(qw(b v1 d2 v3 B)),
-[bless({ dyad => "d2", left => "v1", right => "v3" }, "Term")];
-
-is_deeply parse(qw(b v1 B)), ["v1"];
-
-is_deeply parse(qw(b B)), ["empty"];
-
-is_deeply parse(qw(v1 a2 v3)),
-[bless({ dyad => "a2", left => "v1", right => "v3" }, "Term")];
-
-is_deeply parse(qw(v1 a2 v3 d4 v5 s5)), [                                       # Expression variable, assign, dyad, semicolon
-  bless({
-    dyad  => "a2",
-    left  => "v1",
-    right => bless({ dyad => "d4", left => "v3", right => "v5" }, "Term"),
-  }, "Term"),
-];
-
-say STDERR parse(qw(v1 a2 v3 d4 v5 s5 a7 v8));
-
-is_deeply parse(qw(v1 a2 v3 d4 v5 s5 a7 v8)), [
-  bless({
-    dyad  => "a7",
-    left  => bless({
-               dyad  => "a2",
-               left  => "v1",
-               right => bless({ dyad => "d4", left => "v3", right => "v5" }, "Term"),
-             }, "Term"),
-    right => "v8",
-  }, "Term"),
-];
