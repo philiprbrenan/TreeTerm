@@ -405,3 +405,29 @@ ok test [qw(v1 q1 q2)], <<END;
  q1
  v1
 END
+
+ok test [qw(p2 p1 v1 q1 q2)], <<END;
+ q2
+ q1
+ p2
+ p1
+ v1
+END
+
+ok test [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4)], <<END;
+    d3
+ q2    q4
+ q1    q3
+ p2    p4
+ p1    p3
+ v1    v2
+END
+
+ok test [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4 s)], <<END;
+    d3
+ q2    q4
+ q1    q3
+ p2    p4
+ p1    p3
+ v1    v2
+END
