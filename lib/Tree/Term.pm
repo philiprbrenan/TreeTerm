@@ -584,6 +584,8 @@ sub T                                                                           
   $r
  }
 
+my $startTime = time;
+
 eval {goto latest};
 
 ok T [qw(v1)], <<END;
@@ -797,4 +799,4 @@ ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
  v1
 END
 
-#lll "AAAA", dump(\%used);
+lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
