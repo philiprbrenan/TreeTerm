@@ -15,19 +15,19 @@ use feature qw(say state current_sub);
 
 #D1 Parse                                                                       # Create a parse tree from an array of terms representing an expression.
 
-sub new($@)                                                                     #P New term
- {my ($operator, @operands) = @_;                                               # Operator, operands
-  my $t = genHash(__PACKAGE__,                                                  # Term
-     operands => @operands ? [@operands] : undef,                               # Operands
-     operator => $operator,                                                     # Operator
-     up       => undef,                                                         # Parent term if any
+sub new($@)                                                                     #P New term.
+ {my ($operator, @operands) = @_;                                               # Operator, operands.
+  my $t = genHash(__PACKAGE__,                                                  # Description of a term in the expression.
+     operands => @operands ? [@operands] : undef,                               # Operands to which the operator will be applied.
+     operator => $operator,                                                     # Operator to be applied to one or more operands.
+     up       => undef,                                                         # Parent term if this is a sub term.
    );
   $_->up = $t for grep {ref $_} @operands;                                      # Link to parent if possible
 
   $t
  }
 
-sub parse(@)                                                                    # Parse an expression
+sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
 
   my @s;                                                                        # Stack
@@ -231,7 +231,7 @@ sub parse(@)                                                                    
 
 #D1 Print                                                                       # Print a parse tree to make it easy to visualize its structure.
 
-sub depth($)                                                                    #P Depth of a term in an expression
+sub depth($)                                                                    #P Depth of a term in an expression.
  {my ($e) = @_;                                                                 # Term
   my $d = 0;
   for(; $e; $e = $e->up) {++$d}
@@ -305,7 +305,7 @@ sub flat($@)                                                                    
   join "\n", @s, '';
  }
 
-#d
+#D0
 #-------------------------------------------------------------------------------
 # Export - eeee
 #-------------------------------------------------------------------------------
@@ -334,22 +334,24 @@ Tree::Term - Create a parse tree from an array of terms representing an expressi
 The expression to L<parse> is presented as an array of words, the first letter
 of each word indicates its lexical role as in:
 
+  my @e = qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s);
+
+Where:
+
   a assign     - infix operator with priority 2 binding right to left
-  b open  parenthesis
-  B close parenthesis
+  b open       - open parenthesis
+  B close      - close parenthesis
   d dyad       - infix operator with priority 3 binding left to right
-  p prefix operator
-  q suffix operator
+  p prefix     - monadic prefix operator
+  q suffix     - monadic suffix operator
   s semi-colon - infix operator with priority 1 binding left to right
-  t term
-  v variable
+  v variable   - a variable in the expression
 
 The results of parsing the expression can be printed with L<flat> which
 provides a left to right representation of the parse tree.
 
-  is_deeply parse(qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s))
-        ->flat,
-        <<END;
+  is_deeply parse(@e)->flat, <<END;
+
       d3
    q2       d4
    q1    q4    q6
@@ -386,7 +388,7 @@ Parse an expression
 B<Example:>
 
 
-  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
+  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END;
       d3
    q2       d4
    q1    q4    q6
@@ -555,8 +557,7 @@ else
 sub T                                                                           #P Test a parse
  {my ($expression, $expected) = @_;                                             # Expression, expected result
 
-  my $p = parse(@$expression);
-  my $g = $p->flat;
+  my $g = parse(@$expression)->flat;
   my $r = $g eq $expected;
   owf($log, $g) if -e $log;                                                     # Save result if testing
   confess "Failed test" unless $r;
