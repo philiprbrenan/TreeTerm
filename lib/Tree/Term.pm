@@ -27,8 +27,6 @@ sub new($@)                                                                     
   $t
  }
 
-my %used;
-
 sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
 
@@ -52,9 +50,8 @@ sub parse(@)                                                                    
     index($type, substr($item, 0, 1)) > -1                                      # Something other than a term defines its type by its first letter
    };
 
-  my sub term($)                                                                # Convert the longest possible expression on top of the stack into a term
-   {my ($code) = @_;                                                            # Parameters
-    #lll "TTTT ", scalar(@s), "\n", dump([@s]);
+  my sub reduce()                                                               # Convert the longest possible expression on top of the stack into a term
+   {#lll "TTTT ", scalar(@s), "\n", dump([@s]);
 
     if (@s >= 3)                                                                # Go for term infix-operator term
      {my ($r, $d, $l) = reverse @s;
@@ -139,35 +136,35 @@ END
 
     my %action =                                                                # Action on each lexical item
      (a => sub                                                                  # Assign
-       {check("t");   #Bv
+       {check("t");
         push @s, $e;
        },
 
       b => sub                                                                  # Open
-       {check("bdp");  #as
+       {check("bdp");
         push @s, $e;
        },
 
       B => sub                                                                  # Closing parenthesis
-       {check("bst"); #aqv
-        1 while term('B1');
+       {check("bst");
+        1 while reduce;
         push @s, $e;
-        1 while term('B2');
+        1 while reduce;
         check("bst");
        },
 
       d => sub                                                                  # Infix but not assign or semi-colon
-       {check("t");   #Bqv
+       {check("t");
         push @s, $e;
        },
 
       p => sub                                                                  # Prefix
-       {check("bdp"); #as
+       {check("bdp");
         push @s, $e;
        },
 
       q => sub                                                                  # Post fix
-       {check("t");   #Bqv
+       {check("t");
         if (test($s[-1], 't'))                                                  # Post fix operator applied to a term
          {my $p = pop @s;
           push @s, new $e, $p;
@@ -175,9 +172,9 @@ END
        },
 
       s => sub                                                                  # Semi colon
-       {check("bst"); #Bqv
+       {check("bst");
         push @s, new 'empty5' if $s[-1] =~ m(\A(s|b));                          # Insert an empty element between two consecutive semicolons
-        1 while term('s');
+        1 while reduce;
         push @s, $e;
        },
 
@@ -195,7 +192,7 @@ END
    }
 
   pop @s while @s > 1 and $s[-1] =~ m(s);                                       # Remove any trailing semi colons
-  1 while term('Finals');                                                                 # Final reductions
+  1 while reduce;                                                                 # Final reductions
 
 # lll "EEEE\n", dump([@s]);
   @s == 1 or confess "Incomplete expression";
@@ -571,7 +568,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 31;
+ {plan tests => 32;
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -773,6 +770,21 @@ ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
  v1    v2
 END
 
+ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 a1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
+       q6
+       q5
+       p1
+       p2
+       q4
+       q3
+       p3
+       p4
+    a1
+ p5    q2
+ p6    q1
+ v1    v2
+END
+
 ok T [qw(b v1 B d1 b v2 B)], <<END;
     d1
  v1    v2
@@ -784,9 +796,5 @@ ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
  q1
  v1
 END
-
-#      d => sub                                                                  # Infix but not assign or semi-colon
-#       {check("t");   #Bqv
-
 
 #lll "AAAA", dump(\%used);
