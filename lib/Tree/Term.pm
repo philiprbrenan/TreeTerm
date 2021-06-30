@@ -3,7 +3,7 @@
 # Create a parse tree from an array of terms representing an expression.
 # Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2021
 #-------------------------------------------------------------------------------
-package Tree::term;
+package Tree::Term;
 use v5.26;
 our $VERSION = 20210629;                                                        # Version
 use warnings FATAL => qw(all);
@@ -42,9 +42,9 @@ sub parse(@)                                                                    
       index($type, substr($item, 0, 1)) > -1                                    # Something other than a term defines its type by its first letter
      };
 
-    if (@s >= 3)                                                                # Go for term dyad term
+    if (@s >= 3)                                                                # Go for term infix-operator term
      {my ($r, $d, $l) = reverse @s;
-      if (test($l,t) and test($r,t) and test($d,ads))                           # Parse out dyadic expression
+      if (test($l,t) and test($r,t) and test($d,ads))                           # Parse out infix operator expression
        {pop @s for 1..3;
         push @s, new $d, $l, $r;
         return 1;
@@ -68,7 +68,7 @@ sub parse(@)                                                                    
         push @s, new $l, $r;
         return 1;
        }
-      if (!ref($r) and ref($l) and $r =~ m(\Aq))                                # Postfix operator applied to a term
+      if (!ref($r) and ref($l) and $r =~ m(\Aq))                                # Post fix operator applied to a term
        {pop @s for 1..2;
         push @s, new $r, $l;
         return 1;
@@ -178,7 +178,7 @@ sub parse(@)                                                                    
       #pop @s;
      }
 
-    if ($e =~ m(d))                                                             # Dyad not assign
+    if ($e =~ m(d))                                                             # Infix but not assign or semi-colon
      {check("Bqtv");
       1 while test("t");
       push @s, $e;
@@ -232,14 +232,14 @@ sub parse(@)                                                                    
 #D1 Print                                                                       # Print a parse tree to make it easy to visualize its structure.
 
 sub depth($)                                                                    #P Depth of a term in an expression.
- {my ($e) = @_;                                                                 # Term
+ {my ($term) = @_;                                                              # Term
   my $d = 0;
-  for(; $e; $e = $e->up) {++$d}
+  for(my $t = $term; $t; $t = $t->up) {++$d}
   $d
  }
 
 sub listTerms($)                                                                #P List the terms in an expression in post order
- {my ($e) = @_;                                                                 # Root term
+ {my ($expression) = @_;                                                        # Root term
   my @t;                                                                        # Terms
 
   sub                                                                           # Recurse through terms
@@ -255,13 +255,13 @@ sub listTerms($)                                                                
     else                                                                        # No operands
      {push @t, $e;                                                              # Operator
      }
-   } ->($e);
+   } ->($expression);
   @t
  }
 
 sub flat($@)                                                                    # Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
- {my ($e, @title) = @_;                                                         # Root term, optional title
-  my @t = $e->listTerms;                                                        # Terms in expression in post order
+ {my ($expression, @title) = @_;                                                # Root term, optional title
+  my @t = $expression->listTerms;                                               # Terms in expression in post order
   my @s;                                                                        # Print
 
   my sub align                                                                  # Align the ends of the lines
@@ -305,7 +305,7 @@ sub flat($@)                                                                    
   join "\n", @s, '';
  }
 
-#D0
+#D
 #-------------------------------------------------------------------------------
 # Export - eeee
 #-------------------------------------------------------------------------------
@@ -380,7 +380,7 @@ Create a parse tree from an array of terms representing an expression.
 
 =head2 parse(@expression)
 
-Parse an expression
+Parse an expression.
 
      Parameter    Description
   1  @expression  Expression to parse
@@ -403,13 +403,13 @@ B<Example:>
 
 Print a parse tree to make it easy to visualize its structure.
 
-=head2 flat($e, @title)
+=head2 flat($expression, @title)
 
 Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
 
-     Parameter  Description
-  1  $e         Root term
-  2  @title     Optional title
+     Parameter    Description
+  1  $expression  Root term
+  2  @title       Optional title
 
 B<Example:>
 
@@ -429,7 +429,7 @@ B<Example:>
 =head2 Tree::term Definition
 
 
-Term
+Description of a term in the expression.
 
 
 
@@ -439,15 +439,15 @@ Term
 
 =head4 operands
 
-Operands
+Operands to which the operator will be applied.
 
 =head4 operator
 
-Operator
+Operator to be applied to one or more operands.
 
 =head4 up
 
-Parent term if any
+Parent term if this is a sub term.
 
 
 
@@ -455,46 +455,39 @@ Parent term if any
 
 =head2 new($operator, @operands)
 
-New term
+New term.
 
      Parameter  Description
   1  $operator  Operator
-  2  @operands  Operands
+  2  @operands  Operands.
 
-=head2 depth($e)
+=head2 depth($expression)
 
-Depth of a term in an expression
+Depth of a term in an expression.
 
-     Parameter  Description
-  1  $e         Term
+     Parameter    Description
+  1  $expression  Term
 
-=head2 listTerms($e)
+=head2 listTerms($expression)
 
 List the terms in an expression in post order
 
-     Parameter  Description
-  1  $e         Root term
-
-=head2 T()
-
-Test a parse
-
+     Parameter    Description
+  1  $expression  Root term
 
 
 =head1 Index
 
 
-1 L<depth|/depth> - Depth of a term in an expression
+1 L<depth|/depth> - Depth of a term in an expression.
 
 2 L<flat|/flat> - Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
 
 3 L<listTerms|/listTerms> - List the terms in an expression in post order
 
-4 L<new|/new> - New term
+4 L<new|/new> - New term.
 
-5 L<parse|/parse> - Parse an expression
-
-6 L<T|/T> - Test a parse
+5 L<parse|/parse> - Parse an expression.
 
 =head1 Installation
 
@@ -519,7 +512,6 @@ under the same terms as Perl itself.
 =cut
 
 
-
 # Tests and documentation
 
 sub test
@@ -537,7 +529,7 @@ test unless caller;
 
 1;
 # podDocumentation
-#__DATA__
+__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
