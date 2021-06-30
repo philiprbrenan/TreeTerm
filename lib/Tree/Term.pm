@@ -8,7 +8,7 @@ use v5.26;
 our $VERSION = 20210629;                                                        # Version
 use warnings FATAL => qw(all);
 use strict;
-use Carp;
+use Carp qw(confess cluck);
 use Data::Dump qw(dump ddx pp);
 use Data::Table::Text qw(:all);
 use Test::More qw(no_plan);
@@ -133,7 +133,7 @@ sub parse(@)                                                                    
 
     if (@s >= 2)                                                                # Convert ( ) to an empty term
      {my ($r, $l) = reverse @s;
-      if (!ref($l) and !ref($r) and $l =~ m(\Ab) and $r =~ m(\Ab))              # Empty pair of brackets
+      if (test($l,b) and test($r,B))                                            # Empty pair of brackets
        {pop @s for 1..2;
         push @s, new 'empty1';
         return 1;
@@ -180,6 +180,7 @@ sub parse(@)                                                                    
        {@s = (new('empty4'), $t);
         return 1;
        }
+lll "YYYY ", cluck;
      }
     undef                                                                       # No move made
    };
@@ -249,7 +250,7 @@ sub parse(@)                                                                    
       push @s, $e;
       1 while term;
       check("b");
-      pop @s;
+      #pop @s;
      }
 
     if ($e =~ m(d))                                                             # Dyad not assign
@@ -292,9 +293,9 @@ sub parse(@)                                                                    
   1 while term;                                                                 # Assume three is a semio colon at the end
   pop @s while @s > 1 and $s[-1] =~ m(s);
 
-# lll "EEEE\n", dump([@s]);
+ lll "EEEE\n", dump([@s]);
   @s == 1 or confess "Incomplete expression";
-  owf($log, flat $s[-1]) if -e $log;                                            # Save result if testing
+  owf($log, $s[-1]->flat) if -e $log;                                           # Save result if testing
   $s[0]
  } # parse
 
@@ -306,7 +307,7 @@ sub test                                                                        
   confess $got;
  }
 
-#goto latest;
+eval {goto latest};
 
 ok test [qw(v1)], <<END;
  v1
@@ -335,6 +336,12 @@ ok test [qw(v1 a2 v3 d4 v4)], <<END;
     a2
  v1       d4
        v3    v4
+END
+
+#latest:
+
+ok test [qw(b B)], <<END;
+ empty1
 END
 exit;
 
@@ -366,9 +373,6 @@ is_deeply parse(qw(v1 a2 v3 d4 v5 s5)), [                                       
     right => bless({ dyad => "d4", left => "v3", right => "v5" }, "Term"),
   }, "Term"),
 ];
-
-latest:
-
 
 say STDERR parse(qw(v1 a2 v3 d4 v5 s5 a7 v8));
 
