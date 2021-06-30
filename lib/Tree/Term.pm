@@ -32,16 +32,16 @@ sub parse(@)                                                                    
 
   my @s;                                                                        # Stack
 
-  my $codes = genHash(__PACKAGE__.'::Codes',
-    a => 'assign',                                                              # Parse codes
-    b => 'open',
-    B => 'close',
-    d => 'dyad',
-    p => 'prefix',
-    q => 'suffix',
-    s => 'semi-colon',
-    t => 'term',
-    v => 'variable',
+  my $codes = genHash(q(Tree::Term::Codes),                                     # Lexical item codes.
+    a => 'assign',                                                              # Infix operator with priority 2 binding right to left typically used in an assignment.
+    b => 'open',                                                                # Open parenthesis.
+    B => 'close',                                                               # Close parenthesis.
+    d => 'dyad',                                                                # Infix operator with priority 3 binding left to right typically used in arithmetic.
+    p => 'prefix',                                                              # Monadic prefix operator.
+    q => 'suffix',                                                              # Monadic suffix operator.
+    s => 'semi-colon',                                                          # Infix operator with priority 1 binding left to right typically used to separate statements.
+    t => 'term',                                                                # A term in the expression.
+    v => 'variable',                                                            # A variable in the expression.
    );
 
   my sub term()                                                                 # Convert the longest possible expression on top of the stack into a term
@@ -148,7 +148,6 @@ sub parse(@)                                                                    
 
     if ($e =~ m(a))                                                             # Assign
      {check("Bqtv");
-#      1 while test("t");
       push @s, $e;
       next;
      }
@@ -165,12 +164,10 @@ sub parse(@)                                                                    
       push @s, $e;
       1 while term;
       check("bst");
-      #pop @s;
      }
 
     if ($e =~ m(d))                                                             # Infix but not assign or semi-colon
      {check("Bqtv");
-#     1 while test("t");
       push @s, $e;
       next;
      }
@@ -190,13 +187,11 @@ sub parse(@)                                                                    
 
     if ($e =~ m(s))                                                             # Semi colon
      {check("bBqstv");
-      if ($s =~ m(\A(s|b)))                                                         # Insert an empty element between two consecutive semicolons
+      if ($s =~ m(\A(s|b)))                                                     # Insert an empty element between two consecutive semicolons
        {push @s, new 'empty5';
-#        1 while term;
        }
       1 while term;
       push @s, $e;
-#     1 while term;
       next;
      }
 
@@ -209,7 +204,6 @@ sub parse(@)                                                                    
      }
    }
 
-# lll "DDDD\n", dump([@s]);
   pop @s while @s > 1 and $s[-1] =~ m(s);                                       # Remove any trailing semi colons
   1 while term;                                                                 # Final reductions
 
