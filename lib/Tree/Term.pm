@@ -27,6 +27,8 @@ sub new($@)                                                                     
   $t
  }
 
+my %used;
+
 sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
 
@@ -44,27 +46,28 @@ sub parse(@)                                                                    
     v => 'variable',                                                            # A variable in the expression.
    );
 
-  my sub term()                                                                 # Convert the longest possible expression on top of the stack into a term
-   {my $n = scalar(@s);
-#   lll "TTTT $n \n", dump([@s]);
+  my sub test($$)                                                               # Check the type of an item in the stack
+   {my ($item, $type) = @_;                                                     # Item to test, expected type of item
+    return index($type, 't') > -1 if ref $item;                                 # Term
+    index($type, substr($item, 0, 1)) > -1                                      # Something other than a term defines its type by its first letter
+   };
 
-    my sub test($$)                                                             # Check the type of an item in the stack
-     {my ($item, $type) = @_;                                                   # Item to test, expected type of item
-      return index($type, 't') > -1 if ref $item;                               # Term
-      index($type, substr($item, 0, 1)) > -1                                    # Something other than a term defines its type by its first letter
-     };
+  my sub term($)                                                                # Convert the longest possible expression on top of the stack into a term
+   {my ($code) = @_;                                                            # Parameters
+#   my $n = scalar(@s);
+#   lll "TTTT $n \n", dump([@s]);
 
     if (@s >= 3)                                                                # Go for term infix-operator term
      {my ($r, $d, $l) = reverse @s;
       if (test($l, 't') and test($r, 't') and test($d, 'ads'))                  # Parse out infix operator expression
        {pop  @s for 1..3;
         push @s, new $d, $l, $r;
-        return 1;
+        return 1;                                                               # B1 B2 Finals s
        }
       if (test($l, 'b') and test($r, 'B') and test($d, 't'))                    # Parse bracketed term
        {pop  @s for 1..3;
         push @s, $d;
-        return 1;
+        return 1;                                                               # B2
        }
      }
 
@@ -73,39 +76,12 @@ sub parse(@)                                                                    
       if (test($l, 'b')  and test($r, 'B'))                                     # Empty pair of brackets
        {pop  @s for 1..2;
         push @s, new 'empty1';
-        return 1;
-       }
-      if (test($l, 'p')   and test($r, 't'))                                    # Prefix operator applied to a term
-       {pop  @s for 1..2;
-        push @s, new $l, $r;
-        return 1;
-       }
-      if (test($r,'q') and test($l, 't'))                                       # Post fix operator applied to a term
-       {pop  @s for 1..2;
-        push @s, new $r, $l;
-        return 1;
+        return 1;                                                               # B2
        }
       if (test($l,'s') and test($r, 'B'))                                       # Semi-colon, close implies remove unneeded semi
        {pop  @s for 1..2;
         push @s, $r;
-        return 1;
-       }
-     }
-
-    if (@s >= 1)                                                                # Convert variable to term
-     {my ($t) = reverse @s;
-      if (test($t, 'v'))                                                        # Single variable
-       {pop  @s for 1;
-        push @s, new $t;
-        return 1;
-       }
-     }
-
-    if (@s == 1)                                                                # Convert leading semi to empty, semi
-     {my ($t) = @s;
-      if (test($t,'s'))                                                         # Semi
-       {@s = (new('empty4'), $t);
-        return 1;
+        return 1;                                                               # B2
        }
      }
 
@@ -117,10 +93,19 @@ sub parse(@)                                                                    
 #   lll "AAAA $i $e\n", dump([@s]);
 
     if (!@s)                                                                    # Empty stack
-     {confess "Expression must start with a variable or open or a prefix operator or a semi"
-        if !ref($e) and $e !~ m(\A(b|p|s|v));
-      push @s, $e;
-      term;
+     {confess <<END =~ s(\n) ( )gsr if !ref($e) and $e !~ m(\A(b|p|s|v));
+Expression must start with a variable or open or a prefix operator or
+a semi-colon.
+END
+      if    (test($e, 'v'))                                                     # Single variable
+       {@s = (new $e);
+       }
+      elsif (test($e, 's'))                                                     # Semi
+       {@s = (new('empty4'), $e);
+       }
+      else                                                                      # Not semi or variable
+       {@s = ($e);
+       }
       next;
      }
 
@@ -142,7 +127,7 @@ sub parse(@)                                                                    
       confess qq(Expected $e to follow one of $c at $i but not: $s\n);
      };
 
-    my sub test($)                                                              # Check that the second item on the stack contains one of the expected items
+    my sub prev($)                                                              # Check that the second item on the stack contains one of the expected items
      {my ($types) = @_;                                                         # Possible types to match
       return undef unless @s >= 2;                                              # Stack not deep enough so cannot contain any of the specified types
       return 1 if index($types, ref($s[-2]) ? 't' : substr($s[-2], 0, 1)) > -1;
@@ -162,9 +147,9 @@ sub parse(@)                                                                    
 
       B => sub                                                                  # Closing parenthesis
        {check("abqstv");
-        1 while term;
+        1 while term('B1');
         push @s, $e;
-        1 while term;
+        1 while term('B2');
         check("bst");
        },
 
@@ -178,24 +163,28 @@ sub parse(@)                                                                    
         push @s, $e;
        },
 
-      q => sub                                                                  # Suffix
+      q => sub                                                                  # Post fix
        {check("Bqtv");
-        push @s, $e;
-        term;
+        if (test($s, 't'))                                                      # Post fix operator applied to a term
+         {my $p = pop @s;
+          push @s, new $e, $p;
+         }
        },
 
       s => sub                                                                  # Semi colon
        {check("bBqstv");
         push @s, new 'empty5' if $s =~ m(\A(s|b));                              # Insert an empty element between two consecutive semicolons
-        1 while term;
+        1 while term('s');
         push @s, $e;
        },
 
       v => sub                                                                  # Variable
        {check("abdps");
-        push @s, $e;
-        term;
-        1 while test("p") and term;
+        push @s, new $e;
+        while(prev("p"))
+         {my ($l, $r) = splice @s, -2;
+          push @s, new $l, $r;
+         }
        },
      );
 
@@ -203,7 +192,7 @@ sub parse(@)                                                                    
    }
 
   pop @s while @s > 1 and $s[-1] =~ m(s);                                       # Remove any trailing semi colons
-  1 while term;                                                                 # Final reductions
+  1 while term('Finals');                                                                 # Final reductions
 
 # lll "EEEE\n", dump([@s]);
   @s == 1 or confess "Incomplete expression";
@@ -372,7 +361,7 @@ Parse an expression.
 B<Example:>
 
 
-  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END; 
+  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END;
       d3
    q2       d4
    q1    q4    q6
@@ -381,7 +370,7 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-  
+
 
 =head1 Print
 
@@ -398,7 +387,7 @@ Print the terms in the expression as a tree from left right to make it easier to
 B<Example:>
 
 
-  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;        
+  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
       d3
    q2       d4
    q1    q4    q6
@@ -407,7 +396,7 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-  
+
 
 
 =head1 Hash Definitions
@@ -568,7 +557,7 @@ test unless caller;
 
 1;
 # podDocumentation
-__DATA__
+#__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
@@ -733,3 +722,5 @@ ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)],
  v1    p3    p5
        v2    v3
 END
+
+lll "AAAA", dump(\%used);
