@@ -3,9 +3,9 @@ require v5.26;
 use Module::Build;
 
 my $b = Module::Build->new
- (module_name   => 'Tree::Multi',
+ (module_name   => 'Tree::Term',
   dist_author   => 'philiprbrenan@gmail.com',
-  dist_abstract => 'Multi-way tree in Pure Perl with an even or odd number of keys per node.',
+  dist_abstract => 'Create a parse tree from an array of terms representing an expression.',
   license       => 'perl',
   requires      =>
    {'Carp'                =>0,
@@ -18,8 +18,8 @@ my $b = Module::Build->new
   configure_requires => {'Module::Build' => 0.4224},
   meta_merge =>
    {resources =>
-     {repository => 'https://github.com/philiprbrenan/TreeMulti',
-      bugtracker => 'https://github.com/philiprbrenan/TreeMulti/issues'
+     {repository => 'https://github.com/philiprbrenan/TreeTerm',
+      bugtracker => 'https://github.com/philiprbrenan/TreeTerm/issues'
      }
    },
   create_readme =>  0,
