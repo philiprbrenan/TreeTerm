@@ -68,11 +68,11 @@ sub flat($@)                                                                    
      }
 
     for my $i(keys @s)                                                          # Pad to longest
-     {my $s = $s[$i] =~ s/\s+\Z//r;
+     {my $s = $s[$i] =~ s/\s+\Z//rs;
       my $l = length($s);
       if ($l < $L)
        {my $p = ' ' x ($L - $l);
-        $s[$i] .= ' ' x ($L - $l);
+        $s[$i] = $s . $p;
        }
      }
    };
@@ -87,13 +87,17 @@ sub flat($@)                                                                    
 
     align if $p =~ m(\A(a|d|s));                                                # Shift over for some components
 
-    $s[$d] .= "   $p";                                                          # Describe operator or operand
+    $s[$d] .= " $p";                                                            # Describe operator or operand
     align unless $p =~ m(\A(p|q|v));                                            # Vertical for some components
    }
+
+  shift @s while @s and $s[ 0] =~ m(\A\s*\Z)s;                                  # Remove leading blank lines
+
   for my $i(keys @s)                                                            # Clean up trailing blanks so that tests are not affected by spurious white space mismatches
    {$s[$i] =~ s/\s+\n/\n/gs;
     $s[$i] =~ s/\s+\Z//gs;
    }
+
   unshift @s, join(' ', @title) if @title;                                      # Add title
   join "\n", @s, '';
  }
@@ -104,14 +108,23 @@ sub parse(@)                                                                    
   my @s;                                                                        # Stack
 
   my sub term()                                                                 # Convert the longest possible expression on top of the stack into a term
-   {if (@s >= 3)                                                                # Go for term dyad term
+   {my $n = scalar(@s);
+    lll "TTTT $n \n", dump([@s]);
+
+    my sub test($*)                                                             # Check the type of an item in the stack
+     {my ($item, $type) = @_;                                                   # Item to test, expected type of item
+      return index($type, 't') > -1 if ref $item;                               # Term
+      index($type, substr($item, 0, 1)) > -1                                    # Something other than a term defines its type by its first letter
+     };
+
+    if (@s >= 3)                                                                # Go for term dyad term
      {my ($r, $d, $l) = reverse @s;
-      if (ref($l) and ref($r) and !ref($d))                                     # Parse out dyadic expression
+      if (test($l,t) and test($r,t) and test($d,ads))                           # Parse out dyadic expression
        {pop @s for 1..3;
         push @s, new $d, $l, $r;
         return 1;
        }
-      if (!ref($l) and $l =~ m(\Ab) and !ref($r) and $r =~ m(\AB) and ref($d))  # Parse bracketed term
+      if (test($l,b) and test($r,B) and test($d,t))                             # Parse bracketed term
        {pop @s for 1..3;
         push @s, $d;
         return 1;
@@ -122,7 +135,7 @@ sub parse(@)                                                                    
      {my ($r, $l) = reverse @s;
       if (!ref($l) and !ref($r) and $l =~ m(\Ab) and $r =~ m(\Ab))              # Empty pair of brackets
        {pop @s for 1..2;
-        push @s, new 'empty';
+        push @s, new 'empty1';
         return 1;
        }
       if (!ref($l) and ref($r) and $l =~ m(\Ap))                                # Prefix operator applied to a term
@@ -137,13 +150,13 @@ sub parse(@)                                                                    
        }
       if (!ref($l) and !ref($r) and $l =~ m(\Ab) and $r =~ m(\As))              # Open semi-colon implies one intervening empty term
        {pop @s for 1;
-        push @s, new 'empty';
+        push @s, new 'empty2';
         push @s, $r;
         return 1;
        }
       if (!ref($l) and !ref($r) and $l =~ m(\As) and $r =~ m(\As))              # Semi-colon, semi-colon implies an empty term
        {pop @s for 1;
-        push @s, new 'empty';
+        push @s, new 'empty3';
         push @s, $r;
         return 1;
        }
@@ -164,7 +177,7 @@ sub parse(@)                                                                    
     if (@s == 1)                                                                # Convert leading semi to empty, semi
      {my ($t) = @s;
       if (!ref($t) and $t =~ m(\As))                                            # Semi
-       {@s = (new('empty'), $t);
+       {@s = (new('empty4'), $t);
         return 1;
        }
      }
@@ -173,7 +186,7 @@ sub parse(@)                                                                    
 
   for my $i(keys @e)                                                            # Each input element
    {my $e = $e[$i];
-    lll "AAAA $i $e\n", dump([@s]);
+   lll "AAAA $i $e\n", dump([@s]);
 
     my sub error($)                                                             # Write an error message
      {my ($m) = @_;                                                             # Error message
@@ -261,6 +274,7 @@ sub parse(@)                                                                    
 
     if ($e =~ m(s))                                                             # Semi colon
      {check("Bqstv");
+      push @s, $e;
       1 while term;
       next;
      }
@@ -273,10 +287,12 @@ sub parse(@)                                                                    
      }
    }
 
+# lll "DDDD\n", dump([@s]);
+  pop @s while @s > 1 and $s[-1] =~ m(s);
   1 while term;                                                                 # Assume three is a semio colon at the end
   pop @s while @s > 1 and $s[-1] =~ m(s);
 
-  lll "DDDD\n", dump([@s]);
+# lll "EEEE\n", dump([@s]);
   @s == 1 or confess "Incomplete expression";
   owf($log, flat $s[-1]) if -e $log;                                            # Save result if testing
   $s[0]
@@ -293,20 +309,32 @@ sub test                                                                        
 #goto latest;
 
 ok test [qw(v1)], <<END;
+ v1
+END
 
-   v1
+ok test [qw(s)], <<END;
+ empty4
+END
+
+ok test [qw(s s)], <<END;
+        s
+ empty4   empty3
 END
 
 ok test [qw(v1 d2 v3)], <<END;
-
-        d2
-   v1        v3
+    d2
+ v1    v3
 END
 
 ok test [qw(v1 a2 v3)], <<END;
+    a2
+ v1    v3
+END
 
-        a2
-   v1        v3
+ok test [qw(v1 a2 v3 d4 v4)], <<END;
+    a2
+ v1       d4
+       v3    v4
 END
 exit;
 
