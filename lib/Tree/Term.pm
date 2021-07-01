@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 package Tree::Term;
 use v5.26;
-our $VERSION = 20210632;                                                        # Version
+our $VERSION = 20210633;                                                        # Version
 use warnings FATAL => qw(all);
 use strict;
 use Carp qw(confess cluck);
@@ -46,6 +46,32 @@ sub parse(@)                                                                    
     v => 'variable',                                                            # A variable in the expression.
    );
 
+  my $next = genHash(q(Tree::Term::Next),                                       # Next lexical item expected in each context.
+    a => 'bov',                                                                 # Infix operator with priority 2 binding right to left typically used in an assignment.
+    b => 'Bpsv',                                                                # Open parenthesis.
+    B => 'aBdqs',                                                               # Close parenthesis.
+    d => 'abpv',                                                                # Infix operator with priority 3 binding left to right typically used in arithmetic.
+    p => 'bpv',                                                                 # Monadic prefix operator.
+    q => 'ads',                                                                 # Monadic suffix operator.
+    s => 'bpsv',                                                                # Infix operator with priority 1 binding left to right typically used to separate statements.
+    t => 'aBdqs',                                                               # A term in the expression.
+    v => 'aBdqs',                                                               # A variable in the expression.
+   );
+
+  my sub type($)                                                                # Type of term
+   {my ($s) = @_;                                                               # Term to test
+    return 't' if ref $s;                                                       # Term on top of stack
+    substr($s, 0, 1);                                                           # Something other than a term defines its type by its first letter
+   };
+
+  my sub expected($)                                                            # String of next possible lexical items
+   {my ($s) = @_;                                                               # Code
+    my @c = map {$$codes{$_}} split //, $$next{type $s};                        # Codes for next possible items
+    my $c = pop @c;
+    my $t = join ', ', map {qq('$_')} sort @c;
+    "$t or '$c'"
+   };
+
   my sub test($$)                                                               # Check the type of an item in the stack
    {my ($item, $type) = @_;                                                     # Item to test, expected type of item
     return index($type, 't') > -1 if ref $item;                                 # Term
@@ -60,12 +86,12 @@ sub parse(@)                                                                    
       if (test($l, 't') and test($r, 't') and test($d, 'ads'))                  # Parse out infix operator expression
        {pop  @s for 1..3;
         push @s, new $d, $l, $r;
-        return 1;                                                               # B1 B2 Finals s
+        return 1;
        }
       if (test($l, 'b') and test($r, 'B') and test($d, 't'))                    # Parse bracketed term
        {pop  @s for 1..3;
         push @s, $d;
-        return 1;                                                               # B2
+        return 1;
        }
      }
 
@@ -74,12 +100,12 @@ sub parse(@)                                                                    
       if (test($l, 'b')  and test($r, 'B'))                                     # Empty pair of brackets
        {pop  @s for 1..2;
         push @s, new 'empty1';
-        return 1;                                                               # B2
+        return 1;
        }
       if (test($l,'s') and test($r, 'B'))                                       # Semi-colon, close implies remove unneeded semi
        {pop  @s for 1..2;
         push @s, $r;
-        return 1;                                                               # B2
+        return 1;
        }
       if (test($l,'p') and test($r, 't'))                                       # Prefix, term
        {pop  @s for 1..2;
@@ -96,7 +122,7 @@ sub parse(@)                                                                    
 #   lll "AAAA $i $e\n", dump([@s]);
 
     if (!@s)                                                                    # Empty stack
-     {confess <<END =~ s(\n) ( )gsr if !ref($e) and $e !~ m(\A(b|p|s|v));
+     {die <<END =~ s(\n) ( )gsr if !test($e, "bpsv");
 Expression must start with a variable or an open parenthesis or a prefix
 operator or a semi-colon.
 END
@@ -112,21 +138,28 @@ END
       next;
      }
 
-    my sub type($)                                                              # Type of term
-     {my ($s) = @_;                                                             # Term to test
-      return 't' if ref $s;                                                     # Term on top of stack
-      substr($s, 0, 1);                                                         # Something other than a term defines its type by its first letter
+    my sub de($)                                                                # Extract an error message and die
+     {my ($message) = @_;                                                       # Message
+      $message =~ s(\n) ( )gs;
+      die "$message\n";
      };
 
     my sub check($)                                                             # Check that the top of the stack has one of the specified elements
      {my ($types) = @_;                                                         # Possible types to match
       return 1 if index($types, type($s[-1])) > -1;                             # Check type allowed
-      my @c;
-      for my $c(split //, $types)                                               # Translate lexical codes into types
-       {push @c, $$codes{$c};
-       }
-      my $c = join ', ', sort @c;
-      confess qq(Expected $e to follow one of $c at $i but not: $s[-1]\n);
+      my $j = $i + 1;
+      my $s = $s[-1];
+      my $E = $$codes{type $e} // '';
+      my $X = expected $s;
+      de <<END if ref $s;
+Unexpected '$E': $e following term ending at position $j.
+Expected: $X.
+END
+      my $S = $$codes{type $s} // '';
+      de <<END;
+Unexpected '$E': $e following '$S': $s at position $j.
+Expected: $X.
+END
      };
 
     my sub prev($)                                                              # Check that the second item on the stack contains one of the expected items
@@ -175,7 +208,7 @@ END
 
       s => sub                                                                  # Semi colon
        {check("bst");
-        push @s, new 'empty5' if $s[-1] =~ m(\A(s|b));                          # Insert an empty element between two consecutive semicolons
+        push @s, new 'empty5' if test($s[-1], "sb");                            # Insert an empty element between two consecutive semicolons
         1 while reduce;
         push @s, $e;
        },
@@ -194,10 +227,10 @@ END
    }
 
   pop @s while @s > 1 and $s[-1] =~ m(s);                                       # Remove any trailing semi colons
-  1 while reduce;                                                                 # Final reductions
+  1 while reduce;                                                               # Final reductions
 
 # lll "EEEE\n", dump([@s]);
-  @s == 1 or confess "Incomplete expression";
+  @s == 1 or die "Incomplete expression\n";
 
   $s[0]                                                                         # The resulting parse tree
  } # parse
@@ -341,7 +374,7 @@ END
 Create a parse tree from an array of terms representing an expression.
 
 
-Version 20210631.
+Version 20210633.
 
 
 The following sections describe the methods in each functional area of this
@@ -389,14 +422,11 @@ Print the terms in the expression as a tree from left right to make it easier to
 B<Example:>
 
 
-  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
-      d3
-   q2       d4
-   q1    q4    q6
-   p2    q3    q5
-   p1    p4    p6
-   v1    p3    p5
-         v2    v3
+  ok T [qw(v1 a2 v3 d4 v5 s6 v8 a9 v10)], <<END;
+                  s6
+      a2                a9
+   v1       d4       v8    v10
+         v3    v5
   END
 
 
@@ -570,7 +600,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 32;
+ {plan tests => 36;
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -619,7 +649,7 @@ ok T [qw(v1 a2 v3 d4 v5)], <<END;
        v3    v5
 END
 
-ok T [qw(v1 a2 v3 d4 v5 s6 v8 a9 v10)], <<END;
+ok T [qw(v1 a2 v3 d4 v5 s6 v8 a9 v10)], <<END;                                  #Tflat
                 s6
     a2                a9
  v1       d4       v8    v10
@@ -697,7 +727,7 @@ ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4)], <<END;
  v1    v2
 END
 
-ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;        #Tflat
+ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
     d3
  q2       d4
  q1    q4    q6
@@ -800,5 +830,25 @@ ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
  q1
  v1
 END
+
+if (1)
+ {eval {parse(qw(b v1))};
+  ok $@ =~ m(Incomplete expression)s;
+ }
+
+if (1)
+ {eval {parse(qw(b v1 B B))};
+  ok $@ =~ m(Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon')s;
+ }
+
+if (1)
+ {eval {parse(qw(v1 d1 d2 v2))};
+  ok $@ =~ m(Unexpected 'dyad': d2 following 'dyad': d1 at position 3. Expected: 'assign', 'open', 'prefix' or 'variable')s;
+ }
+
+if (1)
+ {eval {parse(qw(v1 p1))};
+  ok $@ =~ m(Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.)s;
+ }
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
