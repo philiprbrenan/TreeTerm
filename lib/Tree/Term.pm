@@ -53,8 +53,8 @@ my $next = genHash(q(Tree::Term::Next),                                         
   v => 'aBdqs',                                                                 # A variable in the expression.
  );
 
-my $first = $next->s;                                                           # First transition from an imaginary preceding semi colon
-my $last = 'Bqsv';                                                              # One of these elements must be last
+my $first = $next->s;                                                           # First transition from an imaginary preceding semi colon to reach the first element.
+my $last = 'Bqsv';                                                              # One of these elements must be last.
 
 sub type($)                                                                     #P Type of term
  {my ($s) = @_;                                                                 # Term to test
@@ -101,22 +101,6 @@ sub syntaxError(@)                                                              
 
   return '' unless @e;                                                          # An empty string is valid
 
-  my sub test($$$)                                                              # Test a transition
-   {my ($current, $following, $position) = @_;                                  # Current element, following element, position
-    my $n = $$next{type $current};                                              # Elements expected next
-    return if index($n, type $following) > -1;                                  # Transition allowed
-    unexpected $current, $following, $position - 1;                             # Complain about the unexpected element
-   }
-
-  my sub testLast($$)                                                           # Test last transition
-   {my ($current, $position) = @_;                                              # Current element, position
-    return if index($last, type $current) > -1;                                 # Transition allowed
-    my $E = expected $current;
-    die <<END;
-Expected '$E' after final $current at position $position.
-END
-   }
-
   if (1)                                                                        # Test brackets
    {my @b;
     for my $i(keys @e)                                                          # Each element
@@ -149,6 +133,31 @@ END
 No closing bracket matching $a at position $g.
 END
      }
+   }
+
+  my sub test($$$)                                                              # Test a transition
+   {my ($current, $following, $position) = @_;                                  # Current element, following element, position
+    my $n = $$next{type $current};                                              # Elements expected next
+    return if index($n, type $following) > -1;                                  # Transition allowed
+    unexpected $current, $following, $position - 1;                             # Complain about the unexpected element
+   }
+
+  my sub testFirst($)                                                           # Test first transition
+   {my ($current) = @_;                                                         # Current element, position
+    return if index($first, type $current) > -1;                                # Transition allowed
+    my $E = expected $current;
+    die <<END;
+Expected '$E' at start.
+END
+   }
+
+  my sub testLast($$)                                                           # Test last transition
+   {my ($current, $position) = @_;                                              # Current element, position
+    return if index($last, type $current) > -1;                                 # Transition allowed
+    my $E = expected $current;
+    die <<END;
+Expected '$E' after final $current at position $position.
+END
    }
 
   if (1)                                                                        # Test transitions
