@@ -469,16 +469,16 @@ Check the syntax of an expression without parsing it. Die with a helpful message
 B<Example:>
 
 
-  if (1)                                                                          
+  if (1)
    {my @e = qw(v1 p1);
     eval {parse @e};
     ok $@ =~ m(Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon')s;
-  
+
     eval {syntaxError @e};  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
     ok $@ =~ m(Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon');
    }
-  
+
 
 =head2 parse(@expression)
 
@@ -490,10 +490,10 @@ Parse an expression.
 B<Example:>
 
 
-  
+
    my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
-  
-  
+
+
    is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
       d3
@@ -504,18 +504,18 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-  
+
   }
-  
+
   ok T [qw(b b v1 B s B s)], <<END;
    v1
   END
-  
+
   ok T [qw(v1 q1 s)], <<END;
    q1
    v1
   END
-  
+
   ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
    q6
    q5
@@ -525,20 +525,20 @@ B<Example:>
    q1
    v1
   END
-  
+
   ok T [qw(p1 p2 b v1 B)], <<END;
    p1
    p2
    v1
   END
-  
+
   ok T [qw(v1 d1 p1 p2 v2)], <<END;
       d1
    v1    p1
          p2
          v2
   END
-  
+
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -553,7 +553,7 @@ B<Example:>
    p6    q1
    v1    v2
   END
-  
+
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 a1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -568,28 +568,28 @@ B<Example:>
    p6    q1
    v1    v2
   END
-  
+
   ok T [qw(b v1 B d1 b v2 B)], <<END;
       d1
    v1    v2
   END
-  
+
   ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
       d1
    q2    v2
    q1
    v1
   END
-  
+
   if (1)
    {my @e = qw(b v1);
-  
+
     eval {parse @e};  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
     ok $@ =~ m(Incomplete expression)s;
     eval {syntaxError @e};
     ok $@ =~ m(No closing bracket matching b at position 1);
-  
+
 
 =head1 Print
 
@@ -607,7 +607,7 @@ B<Example:>
 
 
    my @e = qw(v1 a2 v3 d4 v5 s6 v8 a9 v10);
-  
+
    is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
                   s6
@@ -616,7 +616,7 @@ B<Example:>
          v3    v5
   END
   }
-  
+
   ok T [qw(v1 a2 v3 s s s  v4 a5 v6 s s)], <<END;
                                          s
                               s            empty5
@@ -625,52 +625,52 @@ B<Example:>
       a2      empty5
    v1    v3
   END
-  
+
   ok T [qw(b B)], <<END;
    empty1
   END
-  
+
   ok T [qw(b b B B)], <<END;
    empty1
   END
-  
+
   ok T [qw(b b v1 B B)], <<END;
    v1
   END
-  
+
   ok T [qw(b b v1 a2 v3 B B)], <<END;
       a2
    v1    v3
   END
-  
+
   ok T [qw(b b v1 a2 v3 d4 v5 B B)], <<END;
       a2
    v1       d4
          v3    v5
   END
-  
+
   ok T [qw(p1 v1)], <<END;
    p1
    v1
   END
-  
+
   ok T [qw(p2 p1 v1)], <<END;
    p2
    p1
    v1
   END
-  
+
   ok T [qw(v1 q1)], <<END;
    q1
    v1
   END
-  
+
   ok T [qw(v1 q1 q2)], <<END;
    q2
    q1
    v1
   END
-  
+
   ok T [qw(p2 p1 v1 q1 q2)], <<END;
    q2
    q1
@@ -678,7 +678,7 @@ B<Example:>
    p1
    v1
   END
-  
+
   ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4)], <<END;
       d3
    q2    q4
@@ -687,7 +687,7 @@ B<Example:>
    p1    p3
    v1    v2
   END
-  
+
   ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
       d3
    q2       d4
@@ -697,22 +697,22 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-  
+
   ok T [qw(b s B)], <<END;
    empty5
   END
-  
+
   ok T [qw(b s s B)], <<END;
           s
    empty5   empty5
   END
-  
-  
-  if (1) {                                                                        
-  
+
+
+  if (1) {
+
    my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
-  
-  
+
+
    is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
       d3
@@ -723,18 +723,18 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-  
+
   }
-  
+
   ok T [qw(b b v1 B s B s)], <<END;
    v1
   END
-  
+
   ok T [qw(v1 q1 s)], <<END;
    q1
    v1
   END
-  
+
   ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
    q6
    q5
@@ -744,20 +744,20 @@ B<Example:>
    q1
    v1
   END
-  
+
   ok T [qw(p1 p2 b v1 B)], <<END;
    p1
    p2
    v1
   END
-  
+
   ok T [qw(v1 d1 p1 p2 v2)], <<END;
       d1
    v1    p1
          p2
          v2
   END
-  
+
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -772,7 +772,7 @@ B<Example:>
    p6    q1
    v1    v2
   END
-  
+
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 a1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -787,26 +787,26 @@ B<Example:>
    p6    q1
    v1    v2
   END
-  
+
   ok T [qw(b v1 B d1 b v2 B)], <<END;
       d1
    v1    v2
   END
-  
+
   ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
       d1
    q2    v2
    q1
    v1
   END
-  
+
   if (1)
    {my @e = qw(b v1);
     eval {parse @e};
     ok $@ =~ m(Incomplete expression)s;
     eval {syntaxError @e};
     ok $@ =~ m(No closing bracket matching b at position 1);
-  
+
 
 
 =head1 Hash Definitions
@@ -1058,7 +1058,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 40;
+ {plan tests => 36
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -1072,6 +1072,17 @@ sub T                                                                           
   owf($log, $g) if -e $log;                                                     # Save result if testing
   confess "Failed test" unless $r;
   $r
+ }
+
+sub E($)                                                                        #P Test a parse error
+ {my ($text) = @_;
+  my ($test, $parse, $syntax) = @{loadArrayFromLines $text};                    # Parse test description
+
+  my @e = split /\s+/, $test;
+  my $e = 0;
+  eval {parse       @e};   ++$e unless index($@, $parse)  > -1;
+  eval {syntaxError @e};   ++$e unless index($@, $syntax) > -1;
+  !$e
  }
 
 my $startTime = time;
@@ -1108,7 +1119,9 @@ ok T [qw(v1 a2 v3 d4 v5)], <<END;
 END
 
 if (1) {                                                                        #Tflat
+
  my @e = qw(v1 a2 v3 d4 v5 s6 v8 a9 v10);
+
  is_deeply parse(@e)->flat, <<END;
                 s6
     a2                a9
@@ -1298,37 +1311,28 @@ ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
  v1
 END
 
-if (1)
- {my @e = qw(b v1);
-  eval {parse @e};
-  ok $@ =~ m(Incomplete expression)s;
-  eval {syntaxError @e};
-  ok $@ =~ m(No closing bracket matching b at position 1);
- }
+ok E <<END;
+b v1
+Incomplete expression
+No closing bracket matching b at position 1
+END
 
-if (1)
- {my @e = qw(b v1 B B);
-  eval {parse @e};
-  ok $@ =~ m(Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon')s;
-  eval {syntaxError @e};
-  ok $@ =~ m(Unexpected closing bracket B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.);
- }
+ok E <<END;
+b v1 B B
+Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.
+Unexpected closing bracket B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.
+END
 
-if (1)
- {my @e = qw(v1 d1 d2 v2);
-  eval {parse @e};
-  my $k = $@;
-  ok $k =~ m(Unexpected 'dyad': d2 following 'dyad': d1 at position 3. Expected: 'assign', 'open', 'prefix' or 'variable')s;
-  eval {syntaxError @e};
-  ok $@ eq $k;
- }
+ok E <<END;
+v1 d1 d2 v2
+Unexpected 'dyad': d2 following 'dyad': d1 at position 3. Expected: 'assign', 'open', 'prefix' or 'variable'.
+Unexpected 'dyad': d2 following 'dyad': d1 at position 3. Expected: 'assign', 'open', 'prefix' or 'variable'.
+END
 
-if (1)                                                                          #TsyntaxError
- {my @e = qw(v1 p1);
-  eval {parse @e};
-  ok $@ =~ m(Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon')s;
-  eval {syntaxError @e};
-  ok $@ =~ m(Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon');
- }
+ok E <<END;                                                                     #TsyntaxError
+v1 p1
+Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.
+Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.
+END
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
