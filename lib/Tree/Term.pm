@@ -415,7 +415,7 @@ Tree::Term - Create a parse tree from an array of terms representing an expressi
 The expression to L<parse> is presented as an array of words, the first letter
 of each word indicates its lexical role as in:
 
-  my @e = qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s);
+  my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
 
 Where:
 
@@ -490,7 +490,12 @@ Parse an expression.
 B<Example:>
 
 
-  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END; 
+  
+   my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
+  
+  
+   is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
+
       d3
    q2       d4
    q1    q4    q6
@@ -499,6 +504,91 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
+  
+  }
+  
+  ok T [qw(b b v1 B s B s)], <<END;
+   v1
+  END
+  
+  ok T [qw(v1 q1 s)], <<END;
+   q1
+   v1
+  END
+  
+  ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
+   q6
+   q5
+   q4
+   q3
+   q2
+   q1
+   v1
+  END
+  
+  ok T [qw(p1 p2 b v1 B)], <<END;
+   p1
+   p2
+   v1
+  END
+  
+  ok T [qw(v1 d1 p1 p2 v2)], <<END;
+      d1
+   v1    p1
+         p2
+         v2
+  END
+  
+  ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
+         q6
+         q5
+         p1
+         p2
+         q4
+         q3
+         p3
+         p4
+      d1
+   p5    q2
+   p6    q1
+   v1    v2
+  END
+  
+  ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 a1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
+         q6
+         q5
+         p1
+         p2
+         q4
+         q3
+         p3
+         p4
+      a1
+   p5    q2
+   p6    q1
+   v1    v2
+  END
+  
+  ok T [qw(b v1 B d1 b v2 B)], <<END;
+      d1
+   v1    v2
+  END
+  
+  ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
+      d1
+   q2    v2
+   q1
+   v1
+  END
+  
+  if (1)
+   {my @e = qw(b v1);
+  
+    eval {parse @e};  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
+
+    ok $@ =~ m(Incomplete expression)s;
+    eval {syntaxError @e};
+    ok $@ =~ m(No closing bracket matching b at position 1);
   
 
 =head1 Print
@@ -516,12 +606,206 @@ Print the terms in the expression as a tree from left right to make it easier to
 B<Example:>
 
 
-  ok T [qw(v1 a2 v3 d4 v5 s6 v8 a9 v10)], <<END;                                  
+   my @e = qw(v1 a2 v3 d4 v5 s6 v8 a9 v10);
+  
+   is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
+
                   s6
       a2                a9
    v1       d4       v8    v10
          v3    v5
   END
+  }
+  
+  ok T [qw(v1 a2 v3 s s s  v4 a5 v6 s s)], <<END;
+                                         s
+                              s            empty5
+                     s             a5
+            s          empty5   v4    v6
+      a2      empty5
+   v1    v3
+  END
+  
+  ok T [qw(b B)], <<END;
+   empty1
+  END
+  
+  ok T [qw(b b B B)], <<END;
+   empty1
+  END
+  
+  ok T [qw(b b v1 B B)], <<END;
+   v1
+  END
+  
+  ok T [qw(b b v1 a2 v3 B B)], <<END;
+      a2
+   v1    v3
+  END
+  
+  ok T [qw(b b v1 a2 v3 d4 v5 B B)], <<END;
+      a2
+   v1       d4
+         v3    v5
+  END
+  
+  ok T [qw(p1 v1)], <<END;
+   p1
+   v1
+  END
+  
+  ok T [qw(p2 p1 v1)], <<END;
+   p2
+   p1
+   v1
+  END
+  
+  ok T [qw(v1 q1)], <<END;
+   q1
+   v1
+  END
+  
+  ok T [qw(v1 q1 q2)], <<END;
+   q2
+   q1
+   v1
+  END
+  
+  ok T [qw(p2 p1 v1 q1 q2)], <<END;
+   q2
+   q1
+   p2
+   p1
+   v1
+  END
+  
+  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4)], <<END;
+      d3
+   q2    q4
+   q1    q3
+   p2    p4
+   p1    p3
+   v1    v2
+  END
+  
+  ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
+      d3
+   q2       d4
+   q1    q4    q6
+   p2    q3    q5
+   p1    p4    p6
+   v1    p3    p5
+         v2    v3
+  END
+  
+  ok T [qw(b s B)], <<END;
+   empty5
+  END
+  
+  ok T [qw(b s s B)], <<END;
+          s
+   empty5   empty5
+  END
+  
+  
+  if (1) {                                                                        
+  
+   my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
+  
+  
+   is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
+
+      d3
+   q2       d4
+   q1    q4    q6
+   p2    q3    q5
+   p1    p4    p6
+   v1    p3    p5
+         v2    v3
+  END
+  
+  }
+  
+  ok T [qw(b b v1 B s B s)], <<END;
+   v1
+  END
+  
+  ok T [qw(v1 q1 s)], <<END;
+   q1
+   v1
+  END
+  
+  ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
+   q6
+   q5
+   q4
+   q3
+   q2
+   q1
+   v1
+  END
+  
+  ok T [qw(p1 p2 b v1 B)], <<END;
+   p1
+   p2
+   v1
+  END
+  
+  ok T [qw(v1 d1 p1 p2 v2)], <<END;
+      d1
+   v1    p1
+         p2
+         v2
+  END
+  
+  ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
+         q6
+         q5
+         p1
+         p2
+         q4
+         q3
+         p3
+         p4
+      d1
+   p5    q2
+   p6    q1
+   v1    v2
+  END
+  
+  ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 a1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
+         q6
+         q5
+         p1
+         p2
+         q4
+         q3
+         p3
+         p4
+      a1
+   p5    q2
+   p6    q1
+   v1    v2
+  END
+  
+  ok T [qw(b v1 B d1 b v2 B)], <<END;
+      d1
+   v1    v2
+  END
+  
+  ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
+      d1
+   q2    v2
+   q1
+   v1
+  END
+  
+  if (1)
+   {my @e = qw(b v1);
+    eval {parse @e};
+    ok $@ =~ m(Incomplete expression)s;
+    eval {syntaxError @e};
+    ok $@ =~ m(No closing bracket matching b at position 1);
   
 
 
@@ -823,12 +1107,15 @@ ok T [qw(v1 a2 v3 d4 v5)], <<END;
        v3    v5
 END
 
-ok T [qw(v1 a2 v3 d4 v5 s6 v8 a9 v10)], <<END;                                  #Tflat
+if (1) {                                                                        #Tflat
+ my @e = qw(v1 a2 v3 d4 v5 s6 v8 a9 v10);
+ is_deeply parse(@e)->flat, <<END;
                 s6
     a2                a9
  v1       d4       v8    v10
        v3    v5
 END
+}
 
 ok T [qw(v1 a2 v3 s s s  v4 a5 v6 s s)], <<END;
                                        s
@@ -921,7 +1208,11 @@ ok T [qw(b s s B)], <<END;
 END
 
 
-ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END; #Tparse
+if (1) {                                                                        #Tparse
+
+ my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
+
+ is_deeply parse(@e)->flat, <<END;
     d3
  q2       d4
  q1    q4    q6
@@ -930,6 +1221,8 @@ ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)],
  v1    p3    p5
        v2    v3
 END
+
+}
 
 ok T [qw(b b v1 B s B s)], <<END;
  v1
