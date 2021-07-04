@@ -29,54 +29,144 @@ sub new($@)                                                                     
   $t
  }
 
+my $codes = genHash(q(Tree::Term::Codes),                                       # Lexical item codes.
+  a => 'assign',                                                                # Infix operator with priority 2 binding right to left typically used in an assignment.
+  b => 'open',                                                                  # Open parenthesis.
+  B => 'close',                                                                 # Close parenthesis.
+  d => 'dyad',                                                                  # Infix operator with priority 3 binding left to right typically used in arithmetic.
+  p => 'prefix',                                                                # Monadic prefix operator.
+  q => 'suffix',                                                                # Monadic suffix operator.
+  s => 'semi-colon',                                                            # Infix operator with priority 1 binding left to right typically used to separate statements.
+  t => 'term',                                                                  # A term in the expression.
+  v => 'variable',                                                              # A variable in the expression.
+ );
+
+my $next = genHash(q(Tree::Term::Next),                                         # Next lexical item expected in each context.  We test thatthese are viable by calling L<syntaxError> against each test sequence.
+  a => 'bpv',                                                                   # Infix operator with priority 2 binding right to left typically used in an assignment.
+  b => 'bBpsv',                                                                 # Open parenthesis.
+  B => 'aBdqs',                                                                 # Close parenthesis.
+  d => 'abpv',                                                                  # Infix operator with priority 3 binding left to right typically used in arithmetic.
+  p => 'bpv',                                                                   # Monadic prefix operator.
+  q => 'aBdqs',                                                                 # Monadic suffix operator.
+  s => 'bBpsv',                                                                 # Infix operator with priority 1 binding left to right typically used to separate statements.
+  t => 'aBdqs',                                                                 # A term in the expression.
+  v => 'aBdqs',                                                                 # A variable in the expression.
+ );
+
+my $first = $next->s;                                                           # First transition from an imaginary preceding semi colon
+my $last = 'Bqsv';                                                              # One of these elements must be last
+
+sub type($)                                                                     #P Type of term
+ {my ($s) = @_;                                                                 # Term to test
+  return 't' if ref $s;                                                         # Term on top of stack
+  substr($s, 0, 1);                                                             # Something other than a term defines its type by its first letter
+ }
+
+sub expected($)                                                                 #P String of next possible lexical items
+ {my ($s) = @_;                                                                 # Code
+  my @c = map {$$codes{$_}} split //, $$next{type $s};                          # Codes for next possible items
+  my $c = pop @c;
+  my $t = join ', ', map {qq('$_')} sort @c;
+  "$t or '$c'"
+ }
+
+sub unexpected($$$)                                                             #P Complain about an unexpected element
+ {my ($element, $unexpected, $position) = @_;                                   # Last good element, unexpected element, position
+  my $j = $position + 1;
+  my $s = $element;
+  my $e = $unexpected;
+  my $E = $$codes{type $e} // '';
+  my $X = expected $s;
+
+  my sub de($)                                                                  # Extract an error message and die
+   {my ($message) = @_;                                                         # Message
+    $message =~ s(\n) ( )gs;
+    die "$message\n";
+   }
+
+  de <<END if ref $s;
+Unexpected '$E': $e following term ending at position $j.
+Expected: $X.
+END
+  my $S = $$codes{type $s} // '';
+  de <<END;
+Unexpected '$E': $e following '$S': $s at position $j.
+Expected: $X.
+END
+ }
+
+sub syntaxError(@)                                                              # Check the syntax of an expression without parsing it. Die if an error occurs
+ {my (@expression) = @_;                                                        # Expression to parse
+  my @e = @_;
+
+  return '' unless @e;                                                          # An empty string is valid
+
+  my sub test($$$)                                                              # Test a transition
+   {my ($current, $following, $position) = @_;                                  # Current element, following element, position
+    my $n = $$next{type $current};                                              # Elements expected next
+    return if index($n, type $following) > -1;                                  # Transition allowed
+    unexpected $current, $following, $position - 1;                             # Complain about the unexpected element
+   }
+
+  my sub testLast($$)                                                           # Test last transition
+   {my ($current, $position) = @_;                                              # Current element, position
+    return if index($last, type $current) > -1;                                 # Transition allowed
+    my $E = expected $current;
+    die <<END;
+Expected '$E' after final $current at position $position.
+END
+   }
+
+  if (1)                                                                        # Test brackets
+   {my @b;
+    for my $i(keys @e)                                                          # Each element
+     {my $e = $e[$i];
+      if (type ($e) eq 'b')                                                     # Open
+       {push @b, [$i, $e];
+       }
+      elsif (type($e) eq 'B')                                                   # Close
+       {if (@b > 0)
+         {my ($h, $a) = pop(@b)->@*;
+          my $j = $i + 1;
+          my $g = $h + 1;
+          die <<END if substr($a, 1) ne substr($e, 1);                          # Close fails to match
+Bracket mismatch between $a at position $g and $e at position $j.
+END
+         }
+        else                                                                    # No corresponding open
+         {my $j = $i + 1;
+          die <<END;
+Unexpected closing bracket $e at position $j.
+END
+         }
+       }
+     }
+    if (@b > 0)
+     {my ($h, $a) = pop(@b)->@*;
+      my $g = $h + 1;
+          die <<END;
+No closing bracket matching $a at position $g.
+END
+     }
+   }
+
+  if (1)                                                                        # Test transitions
+   {test $first, $e[0], 1;                                                      # First transition
+    test $e[$_-1], $e[$_], $_+1 for 1..$#e;                                     # Each element beyond the first
+    testLast  $e[-1], scalar @e;                                                # Final transition
+   }
+ }
+
 sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
 
   my @s;                                                                        # Stack
 
-  my $codes = genHash(q(Tree::Term::Codes),                                     # Lexical item codes.
-    a => 'assign',                                                              # Infix operator with priority 2 binding right to left typically used in an assignment.
-    b => 'open',                                                                # Open parenthesis.
-    B => 'close',                                                               # Close parenthesis.
-    d => 'dyad',                                                                # Infix operator with priority 3 binding left to right typically used in arithmetic.
-    p => 'prefix',                                                              # Monadic prefix operator.
-    q => 'suffix',                                                              # Monadic suffix operator.
-    s => 'semi-colon',                                                          # Infix operator with priority 1 binding left to right typically used to separate statements.
-    t => 'term',                                                                # A term in the expression.
-    v => 'variable',                                                            # A variable in the expression.
-   );
-
-  my $next = genHash(q(Tree::Term::Next),                                       # Next lexical item expected in each context.
-    a => 'bov',                                                                 # Infix operator with priority 2 binding right to left typically used in an assignment.
-    b => 'Bpsv',                                                                # Open parenthesis.
-    B => 'aBdqs',                                                               # Close parenthesis.
-    d => 'abpv',                                                                # Infix operator with priority 3 binding left to right typically used in arithmetic.
-    p => 'bpv',                                                                 # Monadic prefix operator.
-    q => 'ads',                                                                 # Monadic suffix operator.
-    s => 'bpsv',                                                                # Infix operator with priority 1 binding left to right typically used to separate statements.
-    t => 'aBdqs',                                                               # A term in the expression.
-    v => 'aBdqs',                                                               # A variable in the expression.
-   );
-
-  my sub type($)                                                                # Type of term
-   {my ($s) = @_;                                                               # Term to test
-    return 't' if ref $s;                                                       # Term on top of stack
-    substr($s, 0, 1);                                                           # Something other than a term defines its type by its first letter
-   };
-
-  my sub expected($)                                                            # String of next possible lexical items
-   {my ($s) = @_;                                                               # Code
-    my @c = map {$$codes{$_}} split //, $$next{type $s};                        # Codes for next possible items
-    my $c = pop @c;
-    my $t = join ', ', map {qq('$_')} sort @c;
-    "$t or '$c'"
-   };
-
   my sub test($$)                                                               # Check the type of an item in the stack
    {my ($item, $type) = @_;                                                     # Item to test, expected type of item
     return index($type, 't') > -1 if ref $item;                                 # Term
     index($type, substr($item, 0, 1)) > -1                                      # Something other than a term defines its type by its first letter
-   };
+   }
 
   my sub reduce()                                                               # Convert the longest possible expression on top of the stack into a term
    {#lll "TTTT ", scalar(@s), "\n", dump([@s]);
@@ -122,7 +212,7 @@ sub parse(@)                                                                    
 #   lll "AAAA $i $e\n", dump([@s]);
 
     if (!@s)                                                                    # Empty stack
-     {die <<END =~ s(\n) ( )gsr if !test($e, "bpsv");
+     {die <<END =~ s(\n) ( )gsr if !test($e, 'bpsv');
 Expression must start with a variable or an open parenthesis or a prefix
 operator or a semi-colon.
 END
@@ -138,36 +228,18 @@ END
       next;
      }
 
-    my sub de($)                                                                # Extract an error message and die
-     {my ($message) = @_;                                                       # Message
-      $message =~ s(\n) ( )gs;
-      die "$message\n";
-     };
-
     my sub check($)                                                             # Check that the top of the stack has one of the specified elements
      {my ($types) = @_;                                                         # Possible types to match
       return 1 if index($types, type($s[-1])) > -1;                             # Check type allowed
-      my $j = $i + 1;
-      my $s = $s[-1];
-      my $E = $$codes{type $e} // '';
-      my $X = expected $s;
-      de <<END if ref $s;
-Unexpected '$E': $e following term ending at position $j.
-Expected: $X.
-END
-      my $S = $$codes{type $s} // '';
-      de <<END;
-Unexpected '$E': $e following '$S': $s at position $j.
-Expected: $X.
-END
-     };
+      unexpected $s[-1], $e, $i;                                                # Complain about an unexpected type
+     }
 
     my sub prev($)                                                              # Check that the second item on the stack contains one of the expected items
      {my ($types) = @_;                                                         # Possible types to match
       return undef unless @s >= 2;                                              # Stack not deep enough so cannot contain any of the specified types
       return 1 if index($types, type($s[-2])) > -1;
       undef
-     };
+     }
 
     my %action =                                                                # Action on each lexical item
      (a => sub                                                                  # Assign
@@ -386,6 +458,13 @@ module.  For an alphabetic listing of all methods by name see L<Index|/Index>.
 
 Create a parse tree from an array of terms representing an expression.
 
+=head2 syntaxError(@expression)
+
+Check the syntax of an expression without parsing it. Die if an error occurs
+
+     Parameter    Description
+  1  @expression  Expression to parse
+
 =head2 parse(@expression)
 
 Parse an expression.
@@ -510,6 +589,55 @@ A variable in the expression.
 
 
 
+=head2 Tree::Term::Next Definition
+
+
+Next lexical item expected in each context.  We test thatthese are viable by calling L<syntaxError> against each test sequence.
+
+
+
+
+=head3 Output fields
+
+
+=head4 B
+
+Close parenthesis.
+
+=head4 a
+
+Infix operator with priority 2 binding right to left typically used in an assignment.
+
+=head4 b
+
+Open parenthesis.
+
+=head4 d
+
+Infix operator with priority 3 binding left to right typically used in arithmetic.
+
+=head4 p
+
+Monadic prefix operator.
+
+=head4 q
+
+Monadic suffix operator.
+
+=head4 s
+
+Infix operator with priority 1 binding left to right typically used to separate statements.
+
+=head4 t
+
+A term in the expression.
+
+=head4 v
+
+A variable in the expression.
+
+
+
 =head1 Private Methods
 
 =head2 new($operator, @operands)
@@ -547,6 +675,8 @@ List the terms in an expression in post order
 4 L<new|/new> - New term.
 
 5 L<parse|/parse> - Parse an expression.
+
+6 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
 
 =head1 Installation
 
@@ -600,7 +730,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 36;
+ {plan tests => 40;
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -608,7 +738,7 @@ else
 
 sub T                                                                           #P Test a parse
  {my ($expression, $expected) = @_;                                             # Expression, expected result
-
+  syntaxError @$expression;                                                     # Syntax check without creating parse tree
   my $g = parse(@$expression)->flat;
   my $r = $g eq $expected;
   owf($log, $g) if -e $log;                                                     # Save result if testing
@@ -832,23 +962,36 @@ ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
 END
 
 if (1)
- {eval {parse(qw(b v1))};
+ {my @e = qw(b v1);
+  eval {parse @e};
   ok $@ =~ m(Incomplete expression)s;
+  eval {syntaxError @e};
+  ok $@ =~ m(No closing bracket matching b at position 1);
  }
 
 if (1)
- {eval {parse(qw(b v1 B B))};
+ {my @e = qw(b v1 B B);
+  eval {parse @e};
   ok $@ =~ m(Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon')s;
+  eval {syntaxError @e};
+  ok $@ =~ m(Unexpected closing bracket B at position 4);
  }
 
 if (1)
- {eval {parse(qw(v1 d1 d2 v2))};
-  ok $@ =~ m(Unexpected 'dyad': d2 following 'dyad': d1 at position 3. Expected: 'assign', 'open', 'prefix' or 'variable')s;
+ {my @e = qw(v1 d1 d2 v2);
+  eval {parse @e};
+  my $k = $@;
+  ok $k =~ m(Unexpected 'dyad': d2 following 'dyad': d1 at position 3. Expected: 'assign', 'open', 'prefix' or 'variable')s;
+  eval {syntaxError @e};
+  ok $@ eq $k;
  }
 
 if (1)
- {eval {parse(qw(v1 p1))};
-  ok $@ =~ m(Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.)s;
+ {my @e = qw(v1 p1);
+  eval {parse @e};
+  ok $@ =~ m(Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon')s;
+  eval {syntaxError @e};
+  ok $@ =~ m(Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon');
  }
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
