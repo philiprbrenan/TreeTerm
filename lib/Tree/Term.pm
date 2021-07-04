@@ -67,7 +67,7 @@ sub expected($)                                                                 
   my @c = map {$$codes{$_}} split //, $$next{type $s};                          # Codes for next possible items
   my $c = pop @c;
   my $t = join ', ', map {qq('$_')} sort @c;
-  "$t or '$c'"
+  "Expected: $t or '$c'."
  }
 
 sub unexpected($$$)                                                             #P Complain about an unexpected element
@@ -86,16 +86,16 @@ sub unexpected($$$)                                                             
 
   de <<END if ref $s;
 Unexpected '$E': $e following term ending at position $j.
-Expected: $X.
+$X.
 END
   my $S = $$codes{type $s} // '';
   de <<END;
 Unexpected '$E': $e following '$S': $s at position $j.
-Expected: $X.
+$X.
 END
  }
 
-sub syntaxError(@)                                                              # Check the syntax of an expression without parsing it. Die if an error occurs
+sub syntaxError(@)                                                              # Check the syntax of an expression without parsing it. Die with a helpful message if an error occurs.  The helpful message will be slightly different from that produced by L<parse> as it cannot contain information from the non existent parse tree.
  {my (@expression) = @_;                                                        # Expression to parse
   my @e = @_;
 
@@ -135,8 +135,9 @@ END
          }
         else                                                                    # No corresponding open
          {my $j = $i + 1;
+          my $E = expected($i ? $e[$i-1] : 's');                                # What we might have expected relying on an imaginary semi-colon preceding the first element
           die <<END;
-Unexpected closing bracket $e at position $j.
+Unexpected closing bracket $e at position $j. $E
 END
          }
        }
@@ -460,10 +461,24 @@ Create a parse tree from an array of terms representing an expression.
 
 =head2 syntaxError(@expression)
 
-Check the syntax of an expression without parsing it. Die if an error occurs
+Check the syntax of an expression without parsing it. Die with a helpful message if an error occurs.  The helpful message will be slightly different from that produced by L<parse|https://en.wikipedia.org/wiki/Parsing> as it cannot contain information from the non existent parse tree.
 
      Parameter    Description
   1  @expression  Expression to parse
+
+B<Example:>
+
+
+  if (1)                                                                          
+   {my @e = qw(v1 p1);
+    eval {parse @e};
+    ok $@ =~ m(Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon')s;
+  
+    eval {syntaxError @e};  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
+
+    ok $@ =~ m(Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon');
+   }
+  
 
 =head2 parse(@expression)
 
@@ -475,7 +490,7 @@ Parse an expression.
 B<Example:>
 
 
-  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END;
+  ok T [qw(b b p2 p1 v1 q1 q2 B  d3 b p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 B s B s)], <<END; 
       d3
    q2       d4
    q1    q4    q6
@@ -484,7 +499,7 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-
+  
 
 =head1 Print
 
@@ -501,13 +516,13 @@ Print the terms in the expression as a tree from left right to make it easier to
 B<Example:>
 
 
-  ok T [qw(v1 a2 v3 d4 v5 s6 v8 a9 v10)], <<END;
+  ok T [qw(v1 a2 v3 d4 v5 s6 v8 a9 v10)], <<END;                                  
                   s6
       a2                a9
    v1       d4       v8    v10
          v3    v5
   END
-
+  
 
 
 =head1 Hash Definitions
@@ -648,6 +663,29 @@ New term.
   1  $operator  Operator
   2  @operands  Operands.
 
+=head2 type($s)
+
+Type of term
+
+     Parameter  Description
+  1  $s         Term to test
+
+=head2 expected($s)
+
+String of next possible lexical items
+
+     Parameter  Description
+  1  $s         Code
+
+=head2 unexpected($element, $unexpected, $position)
+
+Complain about an unexpected element
+
+     Parameter    Description
+  1  $element     Last good element
+  2  $unexpected  Unexpected element
+  3  $position    Position
+
 =head2 depth($term)
 
 Depth of a term in an expression.
@@ -668,15 +706,21 @@ List the terms in an expression in post order
 
 1 L<depth|/depth> - Depth of a term in an expression.
 
-2 L<flat|/flat> - Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
+2 L<expected|/expected> - String of next possible lexical items
 
-3 L<listTerms|/listTerms> - List the terms in an expression in post order
+3 L<flat|/flat> - Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
 
-4 L<new|/new> - New term.
+4 L<listTerms|/listTerms> - List the terms in an expression in post order
 
-5 L<parse|/parse> - Parse an expression.
+5 L<new|/new> - New term.
 
-6 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
+6 L<parse|/parse> - Parse an expression.
+
+7 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
+
+8 L<type|/type> - Type of term
+
+9 L<unexpected|/unexpected> - Complain about an unexpected element
 
 =head1 Installation
 
@@ -974,7 +1018,7 @@ if (1)
   eval {parse @e};
   ok $@ =~ m(Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon')s;
   eval {syntaxError @e};
-  ok $@ =~ m(Unexpected closing bracket B at position 4);
+  ok $@ =~ m(Unexpected closing bracket B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.);
  }
 
 if (1)
@@ -986,7 +1030,7 @@ if (1)
   ok $@ eq $k;
  }
 
-if (1)
+if (1)                                                                          #TsyntaxError
  {my @e = qw(v1 p1);
   eval {parse @e};
   ok $@ =~ m(Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon')s;
