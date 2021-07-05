@@ -30,12 +30,12 @@ sub new($@)                                                                     
  }
 
 my $codes = genHash(q(Tree::Term::Codes),                                       # Lexical item codes.
-  a => 'assign',                                                                # Infix operator with priority 2 binding right to left typically used in an assignment.
-  b => 'open',                                                                  # Open parenthesis.
-  B => 'close',                                                                 # Close parenthesis.
-  d => 'dyad',                                                                  # Infix operator with priority 3 binding left to right typically used in arithmetic.
-  p => 'prefix',                                                                # Monadic prefix operator.
-  q => 'suffix',                                                                # Monadic suffix operator.
+  a => 'assignment operator',                                                   # Infix operator with priority 2 binding right to left typically used in an assignment.
+  b => 'opening parenthesis',                                                   # Opening parenthesis.
+  B => 'closing parenthesis',                                                   # Closing parenthesis.
+  d => 'dyadic operator',                                                       # Infix operator with priority 3 binding left to right typically used in arithmetic.
+  p => 'prefix operator',                                                       # Monadic prefix operator.
+  q => 'suffix operator',                                                       # Monadic suffix operator.
   s => 'semi-colon',                                                            # Infix operator with priority 1 binding left to right typically used to separate statements.
   t => 'term',                                                                  # A term in the expression.
   v => 'variable',                                                              # A variable in the expression.
@@ -137,7 +137,7 @@ $E after final $C.
 END
    }
 
-  if (1)                                                                        # Test brackets
+  if (1)                                                                        # Test parentheses
    {my @b;
     for my $i(keys @e)                                                          # Each element
      {my $e = $e[$i];
@@ -150,23 +150,23 @@ END
           my $j = $i + 1;
           my $g = $h + 1;
           die <<END if substr($a, 1) ne substr($e, 1);                          # Close fails to match
-Bracket mismatch between $a at position $g and $e at position $j.
+Parenthesis mismatch between $a at position $g and $e at position $j.
 END
          }
         else                                                                    # No corresponding open
          {my $j = $i + 1;
           my $E = $i ? expected($e[$i-1]) : testFirst;                          # What we might have expected relying on an imaginary semi-colon preceding the first element
           die <<END;
-Unexpected closing bracket $e at position $j. $E.
+Unexpected closing parenthesis $e at position $j. $E.
 END
          }
        }
      }
-    if (@b > 0)                                                                 # Closing brackets at end
+    if (@b > 0)                                                                 # Closing parentheses at end
      {my ($h, $a) = pop(@b)->@*;
       my $g = $h + 1;
           die <<END;
-No closing bracket matching $a at position $g.
+No closing parenthesis matching $a at position $g.
 END
      }
    }
@@ -199,16 +199,16 @@ sub parse(@)                                                                    
         push @s, new $d, $l, $r;
         return 1;
        }
-      if (test($l, 'b') and test($r, 'B') and test($d, 't'))                    # Parse bracketed term
+      if (test($l, 'b') and test($r, 'B') and test($d, 't'))                    # Parse parenthesized term
        {pop  @s for 1..3;
         push @s, $d;
         return 1;
        }
      }
 
-    if (@s >= 2)                                                                # Convert ( ) to an empty term
+    if (@s >= 2)                                                                # Convert an empty pair of parentheses to an empty term
      {my ($r, $l) = reverse @s;
-      if (test($l, 'b')  and test($r, 'B'))                                     # Empty pair of brackets
+      if (test($l, 'b')  and test($r, 'B'))                                     # Empty pair of parentheses
        {pop  @s for 1..2;
         push @s, new 'empty1';
         return 1;
@@ -230,13 +230,12 @@ sub parse(@)                                                                    
 
   for my $i(keys @expression)                                                   # Each input element
    {my $e = $expression[$i];
-#   lll "AAAA $i $e\n", dump([@s]);
 
     if (!@s)                                                                    # Empty stack
      {my $E = expandElement $e;
       die <<END =~ s(\n) ( )gsr =~ s(\s+\Z) (\n)gsr if !test($e, 'bpsv');
-Expression must start with a variable or an open parenthesis or a prefix
-operator or a semi-colon, not $E.
+Expression must start with 'opening parenthesis', 'prefix
+operator', 'semi-colon' or 'variable', not $E.
 END
       if    (test($e, 'v'))                                                     # Single variable
        {@s = (new $e);
@@ -323,7 +322,6 @@ END
   pop @s while @s > 1 and $s[-1] =~ m(s);                                       # Remove any trailing semi colons
   1 while reduce;                                                               # Final reductions
 
-# lll "EEEE\n", dump([@s]);
   if (@s != 1)                                                                  # Incomplete expression
    {my $E = expected $expression[-1];
     die "Incomplete expression. $E.\n";
@@ -1115,8 +1113,8 @@ sub E($)                                                                        
   eval {parse       @e}; ++$e unless index($@, $parse)  > -1; my $a = $@ // '';
   eval {syntaxError @e}; ++$e unless index($@, $syntax) > -1; my $b = $@ // '';
   if ($e)
-   {say STDERR $a;
-    say STDERR $b;
+   {owf($log, "$a$b") if -e $log;                                               # Save result if testing
+    confess;
    }
   !$e
  }
@@ -1349,32 +1347,32 @@ END
 
 ok E <<END;
 a
-Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon, not 'assign': a.
-Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'assign': a.
+Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
+Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
 END
 
 ok E <<END;
 B
-Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon, not 'close': B.
-Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'close': B.
+Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'closing parenthesis': B.
+Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'closing parenthesis': B.
 END
 
 ok E <<END;
 d1
-Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon, not 'dyad': d1.
-Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'dyad': d1.
+Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'dyadic operator': d1.
+Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'dyadic operator': d1.
 END
 
 ok E <<END;
 p1
-Expected: 'open', 'prefix' or 'variable' after final 'prefix': p1.
-Expected: 'open', 'prefix' or 'variable' after final 'prefix': p1.
+Expected: 'opening parenthesis', 'prefix operator' or 'variable' after final 'prefix operator': p1.
+Expected: 'opening parenthesis', 'prefix operator' or 'variable' after final 'prefix operator': p1.
 END
 
 ok E <<END;
 q1
-Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon, not 'suffix': q1.
-Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'suffix': q1.
+Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'suffix operator': q1.
+Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'suffix operator': q1.
 END
 
 ok E <<END;
@@ -1391,26 +1389,26 @@ END
 
 ok E <<END;
 b v1
-Incomplete expression. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
-No closing bracket matching b at position 1
+Incomplete expression. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+No closing parenthesis matching b at position 1.
 END
 
 ok E <<END;
 b v1 B B
-Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
-Unexpected closing bracket B at position 4. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
+Unexpected 'closing parenthesis': B following 'closing parenthesis': B at position 4. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+Unexpected closing parenthesis B at position 4. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
 END
 
 ok E <<END;
 v1 d1 d2 v2
-Unexpected 'dyad': d2 following 'dyad': d1 at position 3. Expected: 'assign', 'open', 'prefix' or 'variable'.
-Unexpected 'dyad': d2 following 'dyad': d1 at position 3. Expected: 'assign', 'open', 'prefix' or 'variable'.
+Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
 END
 
 ok E <<END;                                                                     #TsyntaxError
 v1 p1
-Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
-Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
+Unexpected 'prefix operator': p1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+Unexpected 'prefix operator': p1 following 'variable': v1 at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
 END
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
