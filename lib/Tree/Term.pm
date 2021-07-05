@@ -62,6 +62,12 @@ sub type($)                                                                     
   substr($s, 0, 1);                                                             # Something other than a term defines its type by its first letter
  }
 
+sub expandElement($)                                                            #P Convert d1 into 'dyad': d1 etc.
+ {my ($e) = @_;                                                                 # Element to expand
+  my $x = $$codes{type $e};                                                     # Expansion
+  "'$x': $e"
+ }
+
 sub expandCodes($)                                                              #P Expand a string of codes
  {my ($e) = @_;                                                                 # Codes to expand
   my @c = map {qq('$_')} sort map {$$codes{$_}} split //, $e;                   # Codes  for next possible items
@@ -79,10 +85,8 @@ sub expected($)                                                                 
 sub unexpected($$$)                                                             #P Complain about an unexpected element
  {my ($element, $unexpected, $position) = @_;                                   # Last good element, unexpected element, position
   my $j = $position + 1;
-  my $s = $element;
-  my $e = $unexpected;
-  my $E = $$codes{type $e} // '';
-  my $X = expected $s;
+  my $E = expandElement $unexpected;
+  my $X = expected $element;
 
   my sub de($)                                                                  # Extract an error message and die
    {my ($message) = @_;                                                         # Message
@@ -90,13 +94,13 @@ sub unexpected($$$)                                                             
     die "$message\n";
    }
 
-  de <<END if ref $s;
-Unexpected '$E': $e following term ending at position $j.
+  de <<END if ref $element;
+Unexpected $E following term ending at position $j.
 $X.
 END
-  my $S = $$codes{type $s} // '';
+  my $S = expandElement $element;
   de <<END;
-Unexpected '$E': $e following '$S': $s at position $j.
+Unexpected $E following $S at position $j.
 $X.
 END
  }
@@ -116,19 +120,20 @@ sub syntaxError(@)                                                              
 
   my sub testFirst                                                              # Test first transition
    {return if index($first, type $e[0]) > -1;                                   # Transition allowed
-    my $c = $$codes{type $e[0]};
-    my $E = expandCodes $first;
+    my $E = expandElement $e[0];
+    my $C = expandCodes $first;
     die <<END;
-Expression must start with $E, not '$c': $e[0].
+Expression must start with $C, not $E.
 END
    }
 
   my sub testLast($$)                                                           # Test last transition
    {my ($current, $position) = @_;                                              # Current element, position
     return if index($last, type $current) > -1;                                 # Transition allowed
+    my $C = expandElement $current;
     my $E = expected $current;
     die <<END;
-$E after final $current at position $position.
+$E after final $C.
 END
    }
 
@@ -321,6 +326,14 @@ END
   if (@s != 1)                                                                  # Incomplete expression
    {my $E = expected $expression[-1];
     die "Incomplete expression. $E.\n";
+   }
+
+  if (index($last,   type $expression[-1]) == -1)                               # Incomplete expression
+   {my $C = expandElement $expression[-1];
+    my $E = expected      $expression[-1];
+    die <<END;
+$E after final $C.
+END
    }
 
   $s[0]                                                                         # The resulting parse tree
@@ -1076,7 +1089,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 38
+ {plan tests => 43
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -1094,7 +1107,7 @@ sub T                                                                           
 
 sub E($)                                                                        #P Test a parse error
  {my ($text) = @_;
-  my ($test, $parse, $syntax) = @{loadArrayFromLines $text};                    # Parse test description
+  my ($test, $parse, $syntax) = split /\n/,  $text;                             # Parse test description
 
   my @e = split /\s+/, $test;
   my $e = 0;
@@ -1340,12 +1353,6 @@ Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'as
 END
 
 ok E <<END;
-b v1
-Incomplete expression. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
-No closing bracket matching b at position 1
-END
-
-ok E <<END;
 B
 Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
 Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'close': B.
@@ -1358,9 +1365,34 @@ Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'dy
 END
 
 ok E <<END;
-p
+p1
+Expected: 'open', 'prefix' or 'variable' after final 'prefix': p1.
+Expected: 'open', 'prefix' or 'variable' after final 'prefix': p1.
+END
+
+
+ok E <<END;
+q1
 Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
-Expected: 'open', 'prefix' or 'variable' after final p at position 1.
+Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'suffix': q1.
+END
+
+ok E <<END;
+s
+
+
+END
+
+ok E <<END;
+v1
+
+
+END
+
+ok E <<END;
+b v1
+Incomplete expression. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
+No closing bracket matching b at position 1
 END
 
 ok E <<END;
