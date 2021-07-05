@@ -71,9 +71,9 @@ sub expandCodes($)                                                              
  }
 
 sub expected($)                                                                 #P String of next possible lexical items
- {my ($s) = @_;                                                                 # Code
+ {my ($s) = @_;                                                                 # Lexical item
   my $e = expandCodes $$next{type $s};                                          # Codes for next possible items
-  "Expected: $e."
+  "Expected: $e"
  }
 
 sub unexpected($$$)                                                             #P Complain about an unexpected element
@@ -107,6 +107,31 @@ sub syntaxError(@)                                                              
 
   return '' unless @e;                                                          # An empty string is valid
 
+  my sub test($$$)                                                              # Test a transition
+   {my ($current, $following, $position) = @_;                                  # Current element, following element, position
+    my $n = $$next{type $current};                                              # Elements expected next
+    return if index($n, type $following) > -1;                                  # Transition allowed
+    unexpected $current, $following, $position - 1;                             # Complain about the unexpected element
+   }
+
+  my sub testFirst                                                              # Test first transition
+   {return if index($first, type $e[0]) > -1;                                   # Transition allowed
+    my $c = $$codes{type $e[0]};
+    my $E = expandCodes $first;
+    die <<END;
+Expression must start with $E, not '$c': $e[0].
+END
+   }
+
+  my sub testLast($$)                                                           # Test last transition
+   {my ($current, $position) = @_;                                              # Current element, position
+    return if index($last, type $current) > -1;                                 # Transition allowed
+    my $E = expected $current;
+    die <<END;
+Expected '$E' after final $current at position $position.
+END
+   }
+
   if (1)                                                                        # Test brackets
    {my @b;
     for my $i(keys @e)                                                          # Each element
@@ -125,9 +150,9 @@ END
          }
         else                                                                    # No corresponding open
          {my $j = $i + 1;
-          my $E = expected($i ? $e[$i-1] : 's');                                # What we might have expected relying on an imaginary semi-colon preceding the first element
+          my $E = $i ? expected($e[$i-1]) : testFirst;                          # What we might have expected relying on an imaginary semi-colon preceding the first element
           die <<END;
-Unexpected closing bracket $e at position $j. $E
+Unexpected closing bracket $e at position $j. $E.
 END
          }
        }
@@ -139,31 +164,6 @@ END
 No closing bracket matching $a at position $g.
 END
      }
-   }
-
-  my sub test($$$)                                                              # Test a transition
-   {my ($current, $following, $position) = @_;                                  # Current element, following element, position
-    my $n = $$next{type $current};                                              # Elements expected next
-    return if index($n, type $following) > -1;                                  # Transition allowed
-    unexpected $current, $following, $position - 1;                             # Complain about the unexpected element
-   }
-
-  my sub testFirst($)                                                           # Test first transition
-   {my ($current) = @_;                                                         # Current element, position
-    return if index($first, type $current) > -1;                                # Transition allowed
-    my $E = expandCodes $first;
-    die <<END;
-Expected $E at start of expression.
-END
-   }
-
-  my sub testLast($$)                                                           # Test last transition
-   {my ($current, $position) = @_;                                              # Current element, position
-    return if index($last, type $current) > -1;                                 # Transition allowed
-    my $E = expected $current;
-    die <<END;
-Expected '$E' after final $current at position $position.
-END
    }
 
   if (1)                                                                        # Test transitions
@@ -318,7 +318,10 @@ END
   1 while reduce;                                                               # Final reductions
 
 # lll "EEEE\n", dump([@s]);
-  @s == 1 or die "Incomplete expression\n";
+  if (@s != 1)                                                                  # Incomplete expression
+   {my $E = expected $expression[-1];
+    die "Incomplete expression. $E.\n";
+   }
 
   $s[0]                                                                         # The resulting parse tree
  } # parse
@@ -1073,7 +1076,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 37
+ {plan tests => 38
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -1332,19 +1335,25 @@ END
 
 ok E <<END;
 b v1
-Incomplete expression
+Incomplete expression. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
 No closing bracket matching b at position 1
+END
+
+ok E <<END;
+B
+Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
+Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'close': B.
 END
 
 ok E <<END;
 d1
 Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
-Expected 'open', 'prefix', 'semi-colon' or 'variable' at start of expression.
+Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'dyad': d1.
 END
 
 ok E <<END;
 b v1 B B
-Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'..
+Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
 Unexpected closing bracket B at position 4. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
 END
 
@@ -1356,8 +1365,8 @@ END
 
 ok E <<END;                                                                     #TsyntaxError
 v1 p1
-Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'..
-Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'..
+Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
+Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
 END
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
