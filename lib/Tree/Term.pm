@@ -41,7 +41,7 @@ my $codes = genHash(q(Tree::Term::Codes),                                       
   v => 'variable',                                                              # A variable in the expression.
  );
 
-my $next = genHash(q(Tree::Term::Next),                                         # Next lexical item expected in each context.  We test thatthese are viable by calling L<syntaxError> against each test sequence.
+my $next = genHash(q(Tree::Term::Next),                                         # Next lexical item expected in each context.  We test that each combination is viable by calling L<syntaxError> against each test sequence.
   a => 'bpv',                                                                   # Infix operator with priority 2 binding right to left typically used in an assignment.
   b => 'bBpsv',                                                                 # Open parenthesis.
   B => 'aBdqs',                                                                 # Close parenthesis.
@@ -53,8 +53,8 @@ my $next = genHash(q(Tree::Term::Next),                                         
   v => 'aBdqs',                                                                 # A variable in the expression.
  );
 
-my $first = $next->s;                                                           # First transition from an imaginary preceding semi colon to reach the first element.
-my $last = 'Bqsv';                                                              # One of these elements must be last.
+my $first = 'bpsv';                                                             # First element
+my $last  = 'Bqsv';                                                             # Last element
 
 sub type($)                                                                     #P Type of term
  {my ($s) = @_;                                                                 # Term to test
@@ -62,12 +62,18 @@ sub type($)                                                                     
   substr($s, 0, 1);                                                             # Something other than a term defines its type by its first letter
  }
 
+sub expandCodes($)                                                              #P Expand a string of codes
+ {my ($e) = @_;                                                                 # Codes to expand
+  my @c = map {qq('$_')} sort map {$$codes{$_}} split //, $e;                   # Codes  for next possible items
+  my $c = pop @c;
+  my $t = join ', ', @c;
+  "$t or $c"
+ }
+
 sub expected($)                                                                 #P String of next possible lexical items
  {my ($s) = @_;                                                                 # Code
-  my @c = map {$$codes{$_}} split //, $$next{type $s};                          # Codes for next possible items
-  my $c = pop @c;
-  my $t = join ', ', map {qq('$_')} sort @c;
-  "Expected: $t or '$c'."
+  my $e = expandCodes $$next{type $s};                                          # Codes for next possible items
+  "Expected: $e."
  }
 
 sub unexpected($$$)                                                             #P Complain about an unexpected element
@@ -126,7 +132,7 @@ END
          }
        }
      }
-    if (@b > 0)
+    if (@b > 0)                                                                 # Closing brackets at end
      {my ($h, $a) = pop(@b)->@*;
       my $g = $h + 1;
           die <<END;
@@ -145,9 +151,9 @@ END
   my sub testFirst($)                                                           # Test first transition
    {my ($current) = @_;                                                         # Current element, position
     return if index($first, type $current) > -1;                                # Transition allowed
-    my $E = expected $current;
+    my $E = expandCodes $first;
     die <<END;
-Expected '$E' at start.
+Expected $E at start of expression.
 END
    }
 
@@ -161,8 +167,8 @@ END
    }
 
   if (1)                                                                        # Test transitions
-   {test $first, $e[0], 1;                                                      # First transition
-    test $e[$_-1], $e[$_], $_+1 for 1..$#e;                                     # Each element beyond the first
+   {testFirst $e[0];                                                            # First transition
+    test      $e[$_-1], $e[$_], $_+1 for 1..$#e;                                # Each element beyond the first
     testLast  $e[-1], scalar @e;                                                # Final transition
    }
  }
@@ -222,7 +228,7 @@ sub parse(@)                                                                    
 #   lll "AAAA $i $e\n", dump([@s]);
 
     if (!@s)                                                                    # Empty stack
-     {die <<END =~ s(\n) ( )gsr if !test($e, 'bpsv');
+     {die <<END =~ s(\n) ( )gsr =~ s(\s+\Z) (\n)gsr if !test($e, 'bpsv');
 Expression must start with a variable or an open parenthesis or a prefix
 operator or a semi-colon.
 END
@@ -1067,7 +1073,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 36
+ {plan tests => 37
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -1089,8 +1095,12 @@ sub E($)                                                                        
 
   my @e = split /\s+/, $test;
   my $e = 0;
-  eval {parse       @e};   ++$e unless index($@, $parse)  > -1;
-  eval {syntaxError @e};   ++$e unless index($@, $syntax) > -1;
+  eval {parse       @e}; ++$e unless index($@, $parse)  > -1; my $a = $@ // '';
+  eval {syntaxError @e}; ++$e unless index($@, $syntax) > -1; my $b = $@ // '';
+  if ($e)
+   {say STDERR $a;
+    say STDERR $b;
+   }
   !$e
  }
 
@@ -1327,9 +1337,15 @@ No closing bracket matching b at position 1
 END
 
 ok E <<END;
+d1
+Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
+Expected 'open', 'prefix', 'semi-colon' or 'variable' at start of expression.
+END
+
+ok E <<END;
 b v1 B B
-Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.
-Unexpected closing bracket B at position 4. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.
+Unexpected 'close': B following 'close': B at position 4. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'..
+Unexpected closing bracket B at position 4. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
 END
 
 ok E <<END;
@@ -1340,8 +1356,8 @@ END
 
 ok E <<END;                                                                     #TsyntaxError
 v1 p1
-Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.
-Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'suffix' or 'semi-colon'.
+Unexpected 'prefix': p1 following term ending at position 2. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'..
+Unexpected 'prefix': p1 following 'variable': v1 at position 2. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'..
 END
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
