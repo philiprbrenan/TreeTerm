@@ -233,9 +233,10 @@ sub parse(@)                                                                    
 #   lll "AAAA $i $e\n", dump([@s]);
 
     if (!@s)                                                                    # Empty stack
-     {die <<END =~ s(\n) ( )gsr =~ s(\s+\Z) (\n)gsr if !test($e, 'bpsv');
+     {my $E = expandElement $e;
+      die <<END =~ s(\n) ( )gsr =~ s(\s+\Z) (\n)gsr if !test($e, 'bpsv');
 Expression must start with a variable or an open parenthesis or a prefix
-operator or a semi-colon.
+operator or a semi-colon, not $E.
 END
       if    (test($e, 'v'))                                                     # Single variable
        {@s = (new $e);
@@ -1348,19 +1349,19 @@ END
 
 ok E <<END;
 a
-Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
+Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon, not 'assign': a.
 Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'assign': a.
 END
 
 ok E <<END;
 B
-Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
+Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon, not 'close': B.
 Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'close': B.
 END
 
 ok E <<END;
 d1
-Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
+Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon, not 'dyad': d1.
 Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'dyad': d1.
 END
 
@@ -1370,10 +1371,9 @@ Expected: 'open', 'prefix' or 'variable' after final 'prefix': p1.
 Expected: 'open', 'prefix' or 'variable' after final 'prefix': p1.
 END
 
-
 ok E <<END;
 q1
-Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
+Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon, not 'suffix': q1.
 Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'suffix': q1.
 END
 
