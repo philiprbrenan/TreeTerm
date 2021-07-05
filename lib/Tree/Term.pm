@@ -128,7 +128,7 @@ END
     return if index($last, type $current) > -1;                                 # Transition allowed
     my $E = expected $current;
     die <<END;
-Expected '$E' after final $current at position $position.
+$E after final $current at position $position.
 END
    }
 
@@ -1334,6 +1334,12 @@ ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
 END
 
 ok E <<END;
+a
+Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
+Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'assign': a.
+END
+
+ok E <<END;
 b v1
 Incomplete expression. Expected: 'assign', 'close', 'dyad', 'semi-colon' or 'suffix'.
 No closing bracket matching b at position 1
@@ -1349,6 +1355,12 @@ ok E <<END;
 d1
 Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
 Expression must start with 'open', 'prefix', 'semi-colon' or 'variable', not 'dyad': d1.
+END
+
+ok E <<END;
+p
+Expression must start with a variable or an open parenthesis or a prefix operator or a semi-colon.
+Expected: 'open', 'prefix' or 'variable' after final p at position 1.
 END
 
 ok E <<END;
