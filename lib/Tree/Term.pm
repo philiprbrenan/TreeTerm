@@ -515,7 +515,7 @@ END
 Create a parse tree from an array of terms representing an expression.
 
 
-Version 20210703.
+Version 20210704.
 
 
 The following sections describe the methods in each functional area of this
@@ -526,6 +526,11 @@ module.  For an alphabetic listing of all methods by name see L<Index|/Index>.
 =head1 Parse
 
 Create a parse tree from an array of terms representing an expression.
+
+=head2 LexicalStructure()
+
+Return the lexical codes and their relationships in a data structure so this information can be used in other contexts.
+
 
 =head2 syntaxError(@expression)
 
@@ -1091,6 +1096,35 @@ A variable in the expression.
 
 
 
+=head2 Tree::Term::LexicalStructure Definition
+
+
+Lexical item codes.
+
+
+
+
+=head3 Output fields
+
+
+=head4 codes
+
+Code describing each lexical item
+
+=head4 first
+
+Lexical items we can start with
+
+=head4 last
+
+Lexical items we can end with
+
+=head4 next
+
+Lexical items we can continue with
+
+
+
 =head2 Tree::Term::Next Definition
 
 
@@ -1187,6 +1221,69 @@ Complain about an unexpected element
   2  $unexpected  Unexpected element
   3  $position    Position
 
+=head2 test_b($item)
+
+Check that we have an opening bracket
+
+     Parameter  Description
+  1  $item      Item to test
+
+=head2 test_B($item)
+
+Check that we have an closing bracket
+
+     Parameter  Description
+  1  $item      Item to test
+
+=head2 test_p($item)
+
+Check that we have a prefix operator
+
+     Parameter  Description
+  1  $item      Item to test
+
+=head2 test_s($item)
+
+Check that we have a semi-colon
+
+     Parameter  Description
+  1  $item      Item to test
+
+=head2 test_v($item)
+
+Check that we have a variable
+
+     Parameter  Description
+  1  $item      Item to test
+
+=head2 test_ads($item)
+
+Check that we have a prefix operator
+
+     Parameter  Description
+  1  $item      Item to test
+
+=head2 test_bpsv($item)
+
+Check that we have an open bracket, prefix operator, semi-colon or variable
+
+     Parameter  Description
+  1  $item      Item to test
+
+=head2 test_sb($item)
+
+Check that we have a semi colon followed by a open bracket
+
+     Parameter  Description
+  1  $item      Item to test
+
+=head2 reduce($s)
+
+Convert the longest possible expression on top of the stack into a term
+
+     Parameter  Description
+  1  $s         Stack
+
 =head2 depth($term)
 
 Depth of a term in an expression.
@@ -1215,17 +1312,37 @@ List the terms in an expression in post order
 
 5 L<flat|/flat> - Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
 
-6 L<listTerms|/listTerms> - List the terms in an expression in post order
+6 L<LexicalStructure|/LexicalStructure> - Return the lexical codes and their relationships in a data structure so this information can be used in other contexts.
 
-7 L<new|/new> - New term.
+7 L<listTerms|/listTerms> - List the terms in an expression in post order
 
-8 L<parse|/parse> - Parse an expression.
+8 L<new|/new> - New term.
 
-9 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
+9 L<parse|/parse> - Parse an expression.
 
-10 L<type|/type> - Type of term
+10 L<reduce|/reduce> - Convert the longest possible expression on top of the stack into a term
 
-11 L<unexpected|/unexpected> - Complain about an unexpected element
+11 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
+
+12 L<test_ads|/test_ads> - Check that we have a prefix operator
+
+13 L<test_B|/test_B> - Check that we have an closing bracket
+
+14 L<test_b|/test_b> - Check that we have an opening bracket
+
+15 L<test_bpsv|/test_bpsv> - Check that we have an open bracket, prefix operator, semi-colon or variable
+
+16 L<test_p|/test_p> - Check that we have a prefix operator
+
+17 L<test_s|/test_s> - Check that we have a semi-colon
+
+18 L<test_sb|/test_sb> - Check that we have a semi colon followed by a open bracket
+
+19 L<test_v|/test_v> - Check that we have a variable
+
+20 L<type|/type> - Type of term
+
+21 L<unexpected|/unexpected> - Complain about an unexpected element
 
 =head1 Installation
 
@@ -1279,7 +1396,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 48
+ {plan tests => 50
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -1631,5 +1748,37 @@ ok T [qw(v1 s b b s s B B)], <<END;
       empty5   empty5
 END
 
+ok T [qw(b v1 s B s s)], <<END;
+    s
+ v1   empty5
+END
+
+is_deeply LexicalStructure,                                                     #TLexicalStructure
+bless({
+  codes => bless({
+             a => "assignment operator",
+             B => "closing parenthesis",
+             b => "opening parenthesis",
+             d => "dyadic operator",
+             p => "prefix operator",
+             q => "suffix operator",
+             s => "semi-colon",
+             t => "term",
+             v => "variable",
+           }, "Tree::Term::Codes"),
+  first => "bpsv",
+  last  => "Bqsv",
+  next  => bless({
+             a => "bpv",
+             B => "aBdqs",
+             b => "bBpsv",
+             d => "abpv",
+             p => "bpv",
+             q => "aBdqs",
+             s => "bBpsv",
+             t => "aBdqs",
+             v => "aBdqs",
+           }, "Tree::Term::Next"),
+}, "Tree::Term::LexicalStructure");
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
