@@ -278,7 +278,7 @@ END
        },
 
       b => sub                                                                  # Open
-       {check("bdp");
+       {check("bdps");
         push @s, $e;
        },
 
@@ -1239,7 +1239,7 @@ test unless caller;
 
 1;
 # podDocumentation
-__DATA__
+#__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
@@ -1250,7 +1250,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
- {plan tests => 44
+ {plan tests => 48
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -1581,5 +1581,26 @@ Expected: 'assignment operator', 'closing parenthesis',
 'dyadic operator', 'semi-colon' or 'suffix operator'.
 END
  }
+
+ok T [qw(v1 s)], <<END;
+ v1
+END
+
+ok T [qw(v1 s s)], <<END;
+    s
+ v1   empty5
+END
+
+ok T [qw(v1 s b s B)], <<END;
+    s
+ v1   empty5
+END
+
+ok T [qw(v1 s b b s s B B)], <<END;
+    s
+ v1          s
+      empty5   empty5
+END
+
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
