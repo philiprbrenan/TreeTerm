@@ -187,28 +187,62 @@ END
    }
  }
 
+sub test_b($)                                                                   #P Check that we have an opening bracket
+ {my ($item) = @_;                                                              # Item to test
+  !ref($item) and substr($item, 0, 1) eq 'b'
+ }
+
+sub test_B($)                                                                   #P Check that we have an closing bracket
+ {my ($item) = @_;                                                              # Item to test
+  !ref($item) and substr($item, 0, 1) eq 'B'
+ }
+
+sub test_p($)                                                                   #P Check that we have a prefix operator
+ {my ($item) = @_;                                                              # Item to test
+  !ref($item) and substr($item, 0, 1) eq 'p'
+ }
+
+sub test_s($)                                                                   #P Check that we have a semi-colon
+ {my ($item) = @_;                                                              # Item to test
+  !ref($item) and substr($item, 0, 1) eq 's'
+ }
+
+sub test_v($)                                                                   #P Check that we have a variable
+ {my ($item) = @_;                                                              # Item to test
+  !ref($item) and substr($item, 0, 1) eq 'v'
+ }
+
+sub test_ads($)                                                                 #P Check that we have a prefix operator
+ {my ($item) = @_;                                                              # Item to test
+  !ref($item) and index('ads',  substr($item, 0, 1)) > -1
+ }
+
+sub test_bpsv($)                                                                #P Check that we have an open bracket, prefix operator, semi-colon or variable
+ {my ($item) = @_;                                                              # Item to test
+  !ref($item) and index('bpsv', substr($item, 0, 1)) > -1
+ }
+
+sub test_sb($)                                                                  #P Check that we have a semi colon followed by a open bracket
+ {my ($item) = @_;                                                              # Item to test
+  !ref($item) and index('sb',   substr($item, 0, 1)) > -1
+ }
+
 sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
 
   my @s;                                                                        # Stack
 
-  my sub test($$)                                                               # Check the type of an item in the stack
-   {my ($item, $type) = @_;                                                     # Item to test, expected type of item
-    return index($type, 't') > -1 if ref $item;                                 # Term
-    index($type, substr($item, 0, 1)) > -1                                      # Something other than a term defines its type by its first letter
-   }
-
   my sub reduce()                                                               # Convert the longest possible expression on top of the stack into a term
    {#lll "TTTT ", scalar(@s), "\n", dump([@s]);
 
     if (@s >= 3)                                                                # Go for term infix-operator term
-     {my ($r, $d, $l) = reverse @s;
-      if (test($l, 't') and test($r, 't') and test($d, 'ads'))                  # Parse out infix operator expression
+     {my ($l, $d, $r) = ($s[-3], $s[-2], $s[-1]);                               # Left dyad right
+      if (ref($l) and ref($r) and test_ads($d))                                 # Parse out infix operator expression
        {pop  @s for 1..3;
         push @s, new $d, $l, $r;
         return 1;
        }
-      if (test($l, 'b') and test($r, 'B') and test($d, 't'))                    # Parse parenthesized term
+      if (test_b($l) and test_B($r) and ref($d))                                # Parse parenthesized term
        {pop  @s for 1..3;
         push @s, $d;
         return 1;
@@ -216,18 +250,18 @@ sub parse(@)                                                                    
      }
 
     if (@s >= 2)                                                                # Convert an empty pair of parentheses to an empty term
-     {my ($r, $l) = reverse @s;
-      if (test($l, 'b')  and test($r, 'B'))                                     # Empty pair of parentheses
+     {my ($l, $r) = ($s[-2], $s[-1]);
+      if (test_b($l) and test_B($r))                                            # Empty pair of parentheses
        {pop  @s for 1..2;
         push @s, new 'empty1';
         return 1;
        }
-      if (test($l,'s') and test($r, 'B'))                                       # Semi-colon, close implies remove unneeded semi
+      if (test_s($l) and test_B($r))                                            # Semi-colon, close implies remove unneeded semi
        {pop  @s for 1..2;
         push @s, $r;
         return 1;
        }
-      if (test($l,'p') and test($r, 't'))                                       # Prefix, term
+      if (test_p($l) and ref($r))                                               # Prefix, term
        {pop  @s for 1..2;
         push @s, new $l, $r;
         return 1;
@@ -242,14 +276,14 @@ sub parse(@)                                                                    
 
     if (!@s)                                                                    # Empty stack
      {my $E = expandElement $e;
-      die <<END =~ s(\n) ( )gsr =~ s(\s+\Z) (\n)gsr if !test($e, 'bpsv');
+      die <<END =~ s(\n) ( )gsr =~ s(\s+\Z) (\n)gsr if !test_bpsv($e);
 Expression must start with 'opening parenthesis', 'prefix
 operator', 'semi-colon' or 'variable', not $E.
 END
-      if    (test($e, 'v'))                                                     # Single variable
+      if    (test_v($e))                                                        # Single variable
        {@s = (new $e);
        }
-      elsif (test($e, 's'))                                                     # Semi
+      elsif (test_s($e))                                                        # Semi
        {@s = (new('empty4'), $e);
        }
       else                                                                      # Not semi or variable
@@ -302,7 +336,7 @@ END
 
       q => sub                                                                  # Post fix
        {check("t");
-        if (test($s[-1], 't'))                                                  # Post fix operator applied to a term
+        if (ref $s[-1])                                                         # Post fix operator applied to a term
          {my $p = pop @s;
           push @s, new $e, $p;
          }
@@ -310,7 +344,7 @@ END
 
       s => sub                                                                  # Semi colon
        {check("bst");
-        push @s, new 'empty5' if test($s[-1], "sb");                            # Insert an empty element between two consecutive semicolons
+        push @s, new 'empty5' if test_sb($s[-1]);                               # Insert an empty element between two consecutive semicolons
         1 while reduce;
         push @s, $e;
        },
