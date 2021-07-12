@@ -227,134 +227,129 @@ sub test_sb($)                                                                  
   !ref($item) and index('sb',   substr($item, 0, 1)) > -1
  }
 
+sub reduce($)                                                                   # Convert the longest possible expression on top of the stack into a term
+ {my ($s) = @_;                                                                 # Stack
+  #lll "TTTT ", scalar(@s), "\n", dump([@s]);
+
+  if (@$s >= 3)                                                                 # Go for term infix-operator term
+   {my ($l, $d, $r) = ($$s[-3], $$s[-2], $$s[-1]);                              # Left dyad right
+    if (ref($l) and ref($r) and test_ads($d))                                   # Parse out infix operator expression
+     {pop  @$s for 1..3;
+      push @$s, new $d, $l, $r;
+      return 1;
+     }
+    if (test_b($l) and test_B($r) and ref($d))                                  # Parse parenthesized term
+     {pop  @$s for 1..3;
+      push @$s, $d;
+      return 1;
+     }
+   }
+
+  if (@$s >= 2)                                                                 # Convert an empty pair of parentheses to an empty term
+   {my ($l, $r) = ($$s[-2], $$s[-1]);
+    if (test_b($l) and test_B($r))                                              # Empty pair of parentheses
+     {pop  @$s for 1..2;
+      push @$s, new 'empty1';
+      return 1;
+     }
+    if (test_s($l) and test_B($r))                                              # Semi-colon, close implies remove unneeded semi
+     {pop  @$s for 1..2;
+      push @$s, $r;
+      return 1;
+     }
+    if (test_p($l) and ref($r))                                                 # Prefix, term
+     {pop  @$s for 1..2;
+      push @$s, new $l, $r;
+      return 1;
+     }
+   }
+
+  undef                                                                         # No move made
+ }
+
 sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
 
-  my @s;                                                                        # Stack
-
-  my sub reduce()                                                               # Convert the longest possible expression on top of the stack into a term
-   {#lll "TTTT ", scalar(@s), "\n", dump([@s]);
-
-    if (@s >= 3)                                                                # Go for term infix-operator term
-     {my ($l, $d, $r) = ($s[-3], $s[-2], $s[-1]);                               # Left dyad right
-      if (ref($l) and ref($r) and test_ads($d))                                 # Parse out infix operator expression
-       {pop  @s for 1..3;
-        push @s, new $d, $l, $r;
-        return 1;
-       }
-      if (test_b($l) and test_B($r) and ref($d))                                # Parse parenthesized term
-       {pop  @s for 1..3;
-        push @s, $d;
-        return 1;
-       }
-     }
-
-    if (@s >= 2)                                                                # Convert an empty pair of parentheses to an empty term
-     {my ($l, $r) = ($s[-2], $s[-1]);
-      if (test_b($l) and test_B($r))                                            # Empty pair of parentheses
-       {pop  @s for 1..2;
-        push @s, new 'empty1';
-        return 1;
-       }
-      if (test_s($l) and test_B($r))                                            # Semi-colon, close implies remove unneeded semi
-       {pop  @s for 1..2;
-        push @s, $r;
-        return 1;
-       }
-      if (test_p($l) and ref($r))                                               # Prefix, term
-       {pop  @s for 1..2;
-        push @s, new $l, $r;
-        return 1;
-       }
-     }
-
-    undef                                                                       # No move made
-   };
+  my $s = [];                                                                   # Stack
 
   for my $i(keys @expression)                                                   # Each input element
    {my $e = $expression[$i];
 
-    if (!@s)                                                                    # Empty stack
+    my sub check($)                                                             #P Check that the top of the stack has one of the specified elements
+     {my ($types) = @_;                                                         # Possible types to match
+      return 1 if index($types, type($$s[-1])) > -1;                            # Check type allowed
+      unexpected $$s[-1], $e, $i;                                               # Complain about an unexpected type
+     };
+
+    if (!@$s)                                                                   # Empty stack
      {my $E = expandElement $e;
       die <<END =~ s(\n) ( )gsr =~ s(\s+\Z) (\n)gsr if !test_bpsv($e);
 Expression must start with 'opening parenthesis', 'prefix
 operator', 'semi-colon' or 'variable', not $E.
 END
       if    (test_v($e))                                                        # Single variable
-       {@s = (new $e);
+       {@$s = (new $e);
        }
       elsif (test_s($e))                                                        # Semi
-       {@s = (new('empty4'), $e);
+       {@$s = (new('empty4'), $e);
        }
       else                                                                      # Not semi or variable
-       {@s = ($e);
+       {@$s = ($e);
        }
       next;
-     }
-
-    my sub check($)                                                             # Check that the top of the stack has one of the specified elements
-     {my ($types) = @_;                                                         # Possible types to match
-      return 1 if index($types, type($s[-1])) > -1;                             # Check type allowed
-      unexpected $s[-1], $e, $i;                                                # Complain about an unexpected type
-     }
-
-    my sub prev($)                                                              # Check that the second item on the stack contains one of the expected items
-     {my ($types) = @_;                                                         # Possible types to match
-      return undef unless @s >= 2;                                              # Stack not deep enough so cannot contain any of the specified types
-      return 1 if index($types, type($s[-2])) > -1;
-      undef
      }
 
     my %action =                                                                # Action on each lexical item
      (a => sub                                                                  # Assign
        {check("t");
-        push @s, $e;
+        push @$s, $e;
        },
 
       b => sub                                                                  # Open
        {check("bdps");
-        push @s, $e;
+        push @$s, $e;
        },
 
       B => sub                                                                  # Closing parenthesis
        {check("bst");
-        1 while reduce;
-        push @s, $e;
-        1 while reduce;
+        1 while reduce $s;
+        push @$s, $e;
+        1 while reduce $s;
         check("bst");
        },
 
       d => sub                                                                  # Infix but not assign or semi-colon
        {check("t");
-        push @s, $e;
+        push @$s, $e;
        },
 
       p => sub                                                                  # Prefix
        {check("bdp");
-        push @s, $e;
+        push @$s, $e;
        },
 
       q => sub                                                                  # Post fix
        {check("t");
-        if (ref $s[-1])                                                         # Post fix operator applied to a term
-         {my $p = pop @s;
-          push @s, new $e, $p;
+        if (ref $$s[-1])                                                        # Post fix operator applied to a term
+         {my $p = pop @$s;
+          push @$s, new $e, $p;
          }
        },
 
       s => sub                                                                  # Semi colon
        {check("bst");
-        push @s, new 'empty5' if test_sb($s[-1]);                               # Insert an empty element between two consecutive semicolons
-        1 while reduce;
-        push @s, $e;
+        push @$s, new 'empty5' if test_sb($$s[-1]);                             # Insert an empty element between two consecutive semicolons
+        1 while reduce $s;
+        push @$s, $e;
        },
 
       v => sub                                                                  # Variable
        {check("abdps");
-        push @s, new $e;
-        while(prev("p"))
-         {my ($l, $r) = splice @s, -2;
-          push @s, new $l, $r;
+        push @$s, new $e;
+
+        while(@$s >= 2 and 'p' eq type($$s[-2]))                                # Check for preceding prefix operators
+         {my ($l, $r) = splice @$s, -2;
+          push @$s, new $l, $r;
          }
        },
      );
@@ -362,10 +357,10 @@ END
     $action{substr($e, 0, 1)}->();                                              # Dispatch the action associated with the lexical item
    }
 
-  pop @s while @s > 1 and $s[-1] =~ m(s);                                       # Remove any trailing semi colons
-  1 while reduce;                                                               # Final reductions
+  pop @$s while @$s > 1 and $$s[-1] =~ m(s);                                    # Remove any trailing semi colons
+  1 while reduce $s;                                                            # Final reductions
 
-  if (@s != 1)                                                                  # Incomplete expression
+  if (@$s != 1)                                                                 # Incomplete expression
    {my $E = expected $expression[-1];
     die "Incomplete expression. $E.\n";
    }
@@ -378,7 +373,7 @@ $E after final $C.
 END
    }
 
-  $s[0]                                                                         # The resulting parse tree
+  $$s[0]                                                                        # The resulting parse tree
  } # parse
 
 #D1 Print                                                                       # Print a parse tree to make it easy to visualize its structure.
