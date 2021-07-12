@@ -227,7 +227,7 @@ sub test_sb($)                                                                  
   !ref($item) and index('sb',   substr($item, 0, 1)) > -1
  }
 
-sub reduce($)                                                                   # Convert the longest possible expression on top of the stack into a term
+sub reduce($)                                                                   #P Convert the longest possible expression on top of the stack into a term
  {my ($s) = @_;                                                                 # Stack
   #lll "TTTT ", scalar(@s), "\n", dump([@s]);
 
