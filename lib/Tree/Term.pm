@@ -272,35 +272,17 @@ sub reduce($)                                                                   
   undef                                                                         # No move made
  }
 
-sub check_t($$$)                                                                #P Check that the top of the stack has a term
+for my $t(qw(t bdp bdps bst abdps))
+ {my $c = <<'END';
+sub check_XXXX($$$)                                                             #P Check that the top of the stack has one of bdps
  {my ($s, $i, $e) = @_;                                                         # Stack, index of current element, current element
-  return 1 if type($$s[-1]) eq 't';                                             # Check type allowed
+  return 1 if index("XXXX", type($$s[-1])) > -1;                                # Check type allowed
   unexpected $$s[-1], $e, $i;                                                   # Complain about an unexpected type
- };
-
-sub check_bdps($$$)                                                             #P Check that the top of the stack has one of bdps
- {my ($s, $i, $e) = @_;                                                         # Stack, index of current element, current element
-  return 1 if index("bdps", type($$s[-1])) > -1;                                # Check type allowed
-  unexpected $$s[-1], $e, $i;                                                   # Complain about an unexpected type
- };
-
-sub check_bdp($$$)                                                              #P Check that the top of the stack has one of bdp
- {my ($s, $i, $e) = @_;                                                         # Stack, index of current element, current element
-  return 1 if index("bdp", type($$s[-1])) > -1;                                 # Check type allowed
-  unexpected $$s[-1], $e, $i;                                                   # Complain about an unexpected type
- };
-
-sub check_bst($$$)                                                              #P Check that the top of the stack has one of bst
- {my ($s, $i, $e) = @_;                                                         # Stack, index of current element, current element
-  return 1 if index("bst", type($$s[-1])) > -1;                                 # Check type allowed
-  unexpected $$s[-1], $e, $i;                                                   # Complain about an unexpected type
- };
-
-sub check_abdps($$$)                                                            #P Check that the top of the stack has one of abdps
- {my ($s, $i, $e) = @_;                                                         # Stack, index of current element, current element
-  return 1 if index("abdps", type($$s[-1])) > -1;                               # Check type allowed
-  unexpected $$s[-1], $e, $i;                                                   # Complain about an unexpected type
- };
+ }
+END
+       $c =~ s(XXXX) ($t)gs;
+  eval $c; $@ and confess "$@\n";
+ }
 
 sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
@@ -380,7 +362,7 @@ END
           push @$s, new $l, $r;
          }
        },
-     }->{substr($e, 0, 1)}->();                                                # Dispatch the action associated with the lexical item
+     }->{substr($e, 0, 1)}->();                                                 # Dispatch the action associated with the lexical item
    }
 
   pop @$s while @$s > 1 and $$s[-1] =~ m(s);                                    # Remove any trailing semi colons
