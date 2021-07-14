@@ -1696,15 +1696,15 @@ END
 is_deeply LexicalStructure,                                                     #TLexicalStructure
 bless({
   codes => bless({
-             a => bless({ letter => "a", name => "assignment operator", next => "bpv" }, "Tree::Term::LexicalCode"),
+             a => bless({ letter => "a", name => "assignment operator", next => "bpv" },   "Tree::Term::LexicalCode"),
              b => bless({ letter => "b", name => "opening parenthesis", next => "bBpsv" }, "Tree::Term::LexicalCode"),
              B => bless({ letter => "B", name => "closing parenthesis", next => "aBdqs" }, "Tree::Term::LexicalCode"),
-             d => bless({ letter => "d", name => "dyadic operator", next => "abpv" }, "Tree::Term::LexicalCode"),
-             p => bless({ letter => "p", name => "prefix operator", next => "bpv" }, "Tree::Term::LexicalCode"),
-             q => bless({ letter => "q", name => "suffix operator", next => "aBdqs" }, "Tree::Term::LexicalCode"),
-             s => bless({ letter => "s", name => "semi-colon", next => "bBpsv" }, "Tree::Term::LexicalCode"),
-             t => bless({ letter => "t", name => "term", next => "aBdqs" }, "Tree::Term::LexicalCode"),
-             v => bless({ letter => "v", name => "variable", next => "aBdqs" }, "Tree::Term::LexicalCode"),
+             d => bless({ letter => "d", name => "dyadic operator",     next => "abpv" },  "Tree::Term::LexicalCode"),
+             p => bless({ letter => "p", name => "prefix operator",     next => "bpv" },   "Tree::Term::LexicalCode"),
+             q => bless({ letter => "q", name => "suffix operator",     next => "aBdqs" }, "Tree::Term::LexicalCode"),
+             s => bless({ letter => "s", name => "semi-colon",          next => "bBpsv" }, "Tree::Term::LexicalCode"),
+             t => bless({ letter => "t", name => "term",                next => "aBdqs" }, "Tree::Term::LexicalCode"),
+             v => bless({ letter => "v", name => "variable",            next => "aBdqs" }, "Tree::Term::LexicalCode"),
            }, "Tree::Term::Codes"),
   first => "bpsv",
   last  => "Bqsv",
