@@ -204,7 +204,7 @@ sub reduce($)                                                                   
   #lll "TTTT ", scalar(@s), "\n", dump([@s]);
 
   if (@$s >= 3)                                                                 # Go for term infix-operator term
-   {my ($l, $d, $r) = ($$s[-3], $$s[-2], $$s[-1]);                              # Left dyad right
+   {my ($l, $d, $r) = ($$s[-3], $$s[-2], $$s[-1]);                              # Left infix right
     if (test_t($l) and test_t($r) and test_ads($d))                             # Parse out infix operator expression
      {pop  @$s for 1..3;
       push @$s, new $d, $l, $r;
@@ -241,7 +241,7 @@ sub reduce($)                                                                   
 
 for my $t(qw(t bdp bdps bst abdps))
  {my $c = <<'END';
-sub check_XXXX($$$)                                                             #P Check that the top of the stack has one of bdps
+sub check_XXXX($$$)                                                             #P Check that the top of the stack has one of XXXX
  {my ($s, $i, $e) = @_;                                                         # Stack, index of current element, current element
   return 1 if index("XXXX", type($$s[-1])) > -1;                                # Check type allowed
   unexpected $$s[-1], $e, $i;                                                   # Complain about an unexpected type
@@ -1079,6 +1079,31 @@ A variable in the expression.
 
 
 
+=head2 Tree::Term::LexicalCode Definition
+
+
+Lexical item codes.
+
+
+
+
+=head3 Output fields
+
+
+=head4 letter
+
+Letter code used to refer to the lexical item.
+
+=head4 name
+
+Descriptive name of lexical item.
+
+=head4 next
+
+Letters codes of items that can follow this lexical item.
+
+
+
 =head2 Tree::Term::LexicalStructure Definition
 
 
@@ -1102,59 +1127,6 @@ Lexical items we can start with
 
 Lexical items we can end with
 
-=head4 next
-
-Lexical items we can continue with
-
-
-
-=head2 Tree::Term::Next Definition
-
-
-Next lexical item expected in each context.  We test that each combination is viable by calling L<syntaxError> against each test sequence.
-
-
-
-
-=head3 Output fields
-
-
-=head4 B
-
-Close parenthesis.
-
-=head4 a
-
-Infix operator with priority 2 binding right to left typically used in an assignment.
-
-=head4 b
-
-Open parenthesis.
-
-=head4 d
-
-Infix operator with priority 3 binding left to right typically used in arithmetic.
-
-=head4 p
-
-Monadic prefix operator.
-
-=head4 q
-
-Monadic suffix operator.
-
-=head4 s
-
-Infix operator with priority 1 binding left to right typically used to separate statements.
-
-=head4 t
-
-A term in the expression.
-
-=head4 v
-
-A variable in the expression.
-
 
 
 =head1 Private Methods
@@ -1166,6 +1138,15 @@ New term.
      Parameter  Description
   1  $operator  Operator
   2  @operands  Operands.
+
+=head2 LexicalCode($letter, $next, $name)
+
+Lexical code definition
+
+     Parameter  Description
+  1  $letter    Letter used to refer to the lexical item
+  2  $next      Letters of items that can follow this lexical item
+  3  $name      Descriptive name of lexical item
 
 =head2 type($s)
 
@@ -1227,7 +1208,7 @@ Convert the longest possible expression on top of the stack into a term
 
 =head2 check_XXXX($s, $i, $e)
 
-Check that the top of the stack has one of bdps
+Check that the top of the stack has one of XXXX
 
      Parameter  Description
   1  $s         Stack
@@ -1252,7 +1233,7 @@ List the terms in an expression in post order
 =head1 Index
 
 
-1 L<check_XXXX|/check_XXXX> - Check that the top of the stack has one of bdps
+1 L<check_XXXX|/check_XXXX> - Check that the top of the stack has one of XXXX
 
 2 L<depth|/depth> - Depth of a term in an expression.
 
@@ -1264,25 +1245,27 @@ List the terms in an expression in post order
 
 6 L<flat|/flat> - Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
 
-7 L<LexicalStructure|/LexicalStructure> - Return the lexical codes and their relationships in a data structure so this information can be used in other contexts.
+7 L<LexicalCode|/LexicalCode> - Lexical code definition
 
-8 L<listTerms|/listTerms> - List the terms in an expression in post order
+8 L<LexicalStructure|/LexicalStructure> - Return the lexical codes and their relationships in a data structure so this information can be used in other contexts.
 
-9 L<new|/new> - New term.
+9 L<listTerms|/listTerms> - List the terms in an expression in post order
 
-10 L<parse|/parse> - Parse an expression.
+10 L<new|/new> - New term.
 
-11 L<reduce|/reduce> - Convert the longest possible expression on top of the stack into a term
+11 L<parse|/parse> - Parse an expression.
 
-12 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
+12 L<reduce|/reduce> - Convert the longest possible expression on top of the stack into a term
 
-13 L<test_t|/test_t> - Check that we have a semi-colon
+13 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
 
-14 L<test_XXXX|/test_XXXX> - Check that we have XXXX
+14 L<test_t|/test_t> - Check that we have a semi-colon
 
-15 L<type|/type> - Type of term
+15 L<test_XXXX|/test_XXXX> - Check that we have XXXX
 
-16 L<unexpected|/unexpected> - Complain about an unexpected element
+16 L<type|/type> - Type of term
+
+17 L<unexpected|/unexpected> - Complain about an unexpected element
 
 =head1 Installation
 
