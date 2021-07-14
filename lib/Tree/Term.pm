@@ -187,49 +187,20 @@ END
    }
  }
 
-sub test_b($)                                                                   #P Check that we have an opening bracket
+for my $t(qw(abdps ads b B bdp bdps bpsv bst p pbsv s sb sbt v))                # Test various sets of items
+ {my $c = <<'END';
+sub test_XXXX($)                                                                #P Check that we have XXXX
  {my ($item) = @_;                                                              # Item to test
-  !ref($item) and substr($item, 0, 1) eq 'b'
+  !ref($item) and index('XXXX',  substr($item, 0, 1)) > -1
  }
-
-sub test_B($)                                                                   #P Check that we have an closing bracket
- {my ($item) = @_;                                                              # Item to test
-  !ref($item) and substr($item, 0, 1) eq 'B'
- }
-
-sub test_p($)                                                                   #P Check that we have a prefix operator
- {my ($item) = @_;                                                              # Item to test
-  !ref($item) and substr($item, 0, 1) eq 'p'
- }
-
-sub test_s($)                                                                   #P Check that we have a semi-colon
- {my ($item) = @_;                                                              # Item to test
-  !ref($item) and substr($item, 0, 1) eq 's'
+END
+       $c =~ s(XXXX) ($t)gs;
+  eval $c; $@ and confess "$@\n";
  }
 
 sub test_t($)                                                                   #P Check that we have a semi-colon
  {my ($item) = @_;                                                              # Item to test
   ref $item
- }
-
-sub test_v($)                                                                   #P Check that we have a variable
- {my ($item) = @_;                                                              # Item to test
-  !ref($item) and substr($item, 0, 1) eq 'v'
- }
-
-sub test_ads($)                                                                 #P Check that we have a prefix operator
- {my ($item) = @_;                                                              # Item to test
-  !ref($item) and index('ads',  substr($item, 0, 1)) > -1
- }
-
-sub test_bpsv($)                                                                #P Check that we have an open bracket, prefix operator, semi-colon or variable
- {my ($item) = @_;                                                              # Item to test
-  !ref($item) and index('bpsv', substr($item, 0, 1)) > -1
- }
-
-sub test_sb($)                                                                  #P Check that we have a semi colon followed by a open bracket
- {my ($item) = @_;                                                              # Item to test
-  !ref($item) and index('sb',   substr($item, 0, 1)) > -1
  }
 
 sub reduce($)                                                                   #P Convert the longest possible expression on top of the stack into a term
