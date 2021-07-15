@@ -267,20 +267,20 @@ sub reduce($)                                                                   
   undef                                                                         # No move made
  }
 
-sub accept_a($$$)                                                               # Assign
- {my ($s, $i, $e) = @_;                                                         # Parameters
+sub accept_a($$$)                                                               #P Assign
+ {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_t($s, $i, $e);
   push @$s, $e;
  }
 
-sub accept_b($$$)                                                               # Open
- {my ($s, $i, $e) = @_;
+sub accept_b($$$)                                                               #P Open
+ {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_bdps($s, $i, $e);
   push @$s, $e;
  }
 
-sub accept_B($$$)                                                               # Closing parenthesis
- {my ($s, $i, $e) = @_;
+sub accept_B($$$)                                                               #P Closing parenthesis
+ {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_bst($s, $i, $e);
   1 while reduce $s;
   push @$s, $e;
@@ -288,20 +288,20 @@ sub accept_B($$$)                                                               
   check_bst($s, $i, $e);
  }
 
-sub accept_d($$$)                                                               # Infix but not assign or semi-colon
- {my ($s, $i, $e) = @_;
+sub accept_d($$$)                                                               #P Infix but not assign or semi-colon
+ {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_t($s, $i, $e);
   push @$s, $e;
  }
 
-sub accept_p($$$)                                                               # Prefix
- {my ($s, $i, $e) = @_;
+sub accept_p($$$)                                                               #P Prefix
+ {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_bdp($s, $i, $e);
   push @$s, $e;
  }
 
-sub accept_q($$$)                                                               # Post fix
- {my ($s, $i, $e) = @_;
+sub accept_q($$$)                                                               #P Post fix
+ {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_t($s, $i, $e);
   if (ref $$s[-1])                                                              # Post fix operator applied to a term
    {my $p = pop @$s;
@@ -309,16 +309,16 @@ sub accept_q($$$)                                                               
    }
  }
 
-sub accept_s($$$)                                                               # Semi colon
- {my ($s, $i, $e) = @_;
+sub accept_s($$$)                                                               #P Semi colon
+ {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_bst($s, $i, $e);
   push @$s, new 'empty2' if test_sb($$s[-1]);                                   # Insert an empty element between two consecutive semicolons
   1 while reduce $s;
   push @$s, $e;
  }
 
-sub accept_v($$$)                                                               # Variable
- {my ($s, $i, $e) = @_;
+sub accept_v($$$)                                                               #P Variable
+ {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_abdps($s, $i, $e);
   push @$s, new $e;
 
@@ -526,7 +526,7 @@ END
 Create a parse tree from an array of terms representing an expression.
 
 
-Version 20210715.
+Version 20210716.
 
 
 The following sections describe the methods in each functional area of this
@@ -572,6 +572,78 @@ B<Example:>
   END
    }
 
+
+=head2 accept_a($s, $i, $e)
+
+Assign
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_b($s, $i, $e)
+
+Open
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_B($s, $i, $e)
+
+Closing parenthesis
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_d($s, $i, $e)
+
+Infix but not assign or semi-colon
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_p($s, $i, $e)
+
+Prefix
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_q($s, $i, $e)
+
+Post fix
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_s($s, $i, $e)
+
+Semi colon
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_v($s, $i, $e)
+
+Variable
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
 
 =head2 parse(@expression)
 
@@ -1221,6 +1293,15 @@ Complain about an unexpected element
   2  $unexpected  Unexpected element
   3  $position    Position
 
+=head2 check_XXXX($s, $i, $e)
+
+Check that the top of the stack has one of XXXX
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Index of current element
+  3  $e         Current element
+
 =head2 test_XXXX($item)
 
 Check that we have XXXX
@@ -1242,15 +1323,6 @@ Convert the longest possible expression on top of the stack into a term
      Parameter  Description
   1  $s         Stack
 
-=head2 check_XXXX($s, $i, $e)
-
-Check that the top of the stack has one of XXXX
-
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Index of current element
-  3  $e         Current element
-
 =head2 depth($term)
 
 Depth of a term in an expression.
@@ -1269,39 +1341,55 @@ List the terms in an expression in post order
 =head1 Index
 
 
-1 L<check_XXXX|/check_XXXX> - Check that the top of the stack has one of XXXX
+1 L<accept_a|/accept_a> - Assign
 
-2 L<depth|/depth> - Depth of a term in an expression.
+2 L<accept_b|/accept_b> - Open
 
-3 L<expandCodes|/expandCodes> - Expand a string of codes
+3 L<accept_B|/accept_B> - Closing parenthesis
 
-4 L<expandElement|/expandElement> - Describe a lexical element
+4 L<accept_d|/accept_d> - Infix but not assign or semi-colon
 
-5 L<expected|/expected> - String of next possible lexical items
+5 L<accept_p|/accept_p> - Prefix
 
-6 L<flat|/flat> - Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
+6 L<accept_q|/accept_q> - Post fix
 
-7 L<LexicalCode|/LexicalCode> - Lexical code definition
+7 L<accept_s|/accept_s> - Semi colon
 
-8 L<LexicalStructure|/LexicalStructure> - Return the lexical codes and their relationships in a data structure so this information can be used in other contexts.
+8 L<accept_v|/accept_v> - Variable
 
-9 L<listTerms|/listTerms> - List the terms in an expression in post order
+9 L<check_XXXX|/check_XXXX> - Check that the top of the stack has one of XXXX
 
-10 L<new|/new> - New term.
+10 L<depth|/depth> - Depth of a term in an expression.
 
-11 L<parse|/parse> - Parse an expression.
+11 L<expandCodes|/expandCodes> - Expand a string of codes
 
-12 L<reduce|/reduce> - Convert the longest possible expression on top of the stack into a term
+12 L<expandElement|/expandElement> - Describe a lexical element
 
-13 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
+13 L<expected|/expected> - String of next possible lexical items
 
-14 L<test_t|/test_t> - Check that we have a semi-colon
+14 L<flat|/flat> - Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
 
-15 L<test_XXXX|/test_XXXX> - Check that we have XXXX
+15 L<LexicalCode|/LexicalCode> - Lexical code definition
 
-16 L<type|/type> - Type of term
+16 L<LexicalStructure|/LexicalStructure> - Return the lexical codes and their relationships in a data structure so this information can be used in other contexts.
 
-17 L<unexpected|/unexpected> - Complain about an unexpected element
+17 L<listTerms|/listTerms> - List the terms in an expression in post order
+
+18 L<new|/new> - New term.
+
+19 L<parse|/parse> - Parse an expression.
+
+20 L<reduce|/reduce> - Convert the longest possible expression on top of the stack into a term
+
+21 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
+
+22 L<test_t|/test_t> - Check that we have a semi-colon
+
+23 L<test_XXXX|/test_XXXX> - Check that we have XXXX
+
+24 L<type|/type> - Type of term
+
+25 L<unexpected|/unexpected> - Complain about an unexpected element
 
 =head1 Installation
 
