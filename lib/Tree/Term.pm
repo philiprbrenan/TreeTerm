@@ -217,10 +217,14 @@ sub reduce($)                                                                   
 
   if (@$s >= 3)                                                                 # Go for term infix-operator term
    {my ($l, $d, $r) = ($$s[-3], $$s[-2], $$s[-1]);                              # Left infix right
-    if (test_t($l) and test_t($r) and test_ads($d))                             # Parse out infix operator expression
-     {pop  @$s for 1..3;
-      push @$s, new $d, $l, $r;
-      return 1;
+    if     (test_t($l))                                                         # Parse out infix operator expression
+     {if   (test_t($r))
+       {if (test_ads($d))
+         {pop  @$s for 1..3;
+          push @$s, new $d, $l, $r;
+          return 1;
+         }
+       }
      }
     if     (test_b($l))                                                         # Parse parenthesized term
      {if   (test_B($r))
