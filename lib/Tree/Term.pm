@@ -225,9 +225,10 @@ sub reduce($)                                                                   
     if (test_b($l))                                                             # Parse parenthesized term
      {if (test_B($r) and test_t($d))                               # Parse parenthesized term
        {if (test_t($d))                               # Parse parenthesized term
-       {pop  @$s for 1..3;
-        push @$s, $d;
-        return 1;
+         {pop  @$s for 1..3;
+          push @$s, $d;
+          return 1;
+         }
        }
      }
    }
