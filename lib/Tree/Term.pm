@@ -222,9 +222,9 @@ sub reduce($)                                                                   
       push @$s, new $d, $l, $r;
       return 1;
      }
-    if (test_b($l))                                                             # Parse parenthesized term
-     {if (test_B($r) and test_t($d))                               # Parse parenthesized term
-       {if (test_t($d))                               # Parse parenthesized term
+    if     (test_b($l))                                                         # Parse parenthesized term
+     {if   (test_B($r))
+       {if (test_t($d))
          {pop  @$s for 1..3;
           push @$s, $d;
           return 1;
