@@ -312,7 +312,7 @@ sub accept_q($$$)                                                               
 sub accept_s($$$)                                                               # Semi colon
  {my ($s, $i, $e) = @_;
   check_bst($s, $i, $e);
-  push @$s, new 'empty5' if test_sb($$s[-1]);                                   # Insert an empty element between two consecutive semicolons
+  push @$s, new 'empty2' if test_sb($$s[-1]);                                   # Insert an empty element between two consecutive semicolons
   1 while reduce $s;
   push @$s, $e;
  }
@@ -357,14 +357,14 @@ END
        {@$s = (new $e);
        }
       elsif (test_s($e))                                                        # Semi
-       {@$s = (new('empty4'), $e);
+       {@$s = (new('empty3'), $e);
        }
       else                                                                      # Not semi or variable
        {@$s = ($e);
        }
       next;
      }
-                                                                                # Action on each lexical item
+
     $$Accept{substr($e, 0, 1)}->($s, $i, $e);                                   # Dispatch the action associated with the lexical item
    }
 
@@ -779,10 +779,10 @@ B<Example:>
 
   ok T [qw(v1 a2 v3 s s s  v4 a5 v6 s s)], <<END;
                                          s
-                              s            empty5
+                              s            empty2
                      s             a5
-            s          empty5   v4    v6
-      a2      empty5
+            s          empty2   v4    v6
+      a2      empty2
    v1    v3
   END
 
@@ -859,12 +859,12 @@ B<Example:>
   END
 
   ok T [qw(b s B)], <<END;
-   empty5
+   empty2
   END
 
   ok T [qw(b s s B)], <<END;
           s
-   empty5   empty5
+   empty2   empty2
   END
 
 
@@ -1395,12 +1395,12 @@ ok T [qw(v1)], <<END;
 END
 
 ok T [qw(s)], <<END;
- empty4
+ empty3
 END
 
 ok T [qw(s s)], <<END;
         s
- empty4   empty5
+ empty3   empty2
 END
 
 ok T [qw(v1 d2 v3)], <<END;
@@ -1433,10 +1433,10 @@ END
 
 ok T [qw(v1 a2 v3 s s s  v4 a5 v6 s s)], <<END;
                                        s
-                            s            empty5
+                            s            empty2
                    s             a5
-          s          empty5   v4    v6
-    a2      empty5
+          s          empty2   v4    v6
+    a2      empty2
  v1    v3
 END
 
@@ -1513,12 +1513,12 @@ ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
 END
 
 ok T [qw(b s B)], <<END;
- empty5
+ empty2
 END
 
 ok T [qw(b s s B)], <<END;
         s
- empty5   empty5
+ empty2   empty2
 END
 
 
@@ -1693,23 +1693,23 @@ END
 
 ok T [qw(v1 s s)], <<END;
     s
- v1   empty5
+ v1   empty2
 END
 
 ok T [qw(v1 s b s B)], <<END;
     s
- v1   empty5
+ v1   empty2
 END
 
 ok T [qw(v1 s b b s s B B)], <<END;
     s
  v1          s
-      empty5   empty5
+      empty2   empty2
 END
 
 ok T [qw(b v1 s B s s)], <<END;
     s
- v1   empty5
+ v1   empty2
 END
 
 is_deeply LexicalStructure,                                                     #TLexicalStructure
