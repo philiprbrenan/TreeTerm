@@ -5,7 +5,7 @@
 #-------------------------------------------------------------------------------
 package Tree::Term;
 use v5.26;
-our $VERSION = 20210714;                                                        # Version
+our $VERSION = 20210715;                                                        # Version
 use warnings FATAL => qw(all);
 use strict;
 use Carp qw(confess cluck);
@@ -183,6 +183,18 @@ END
    }
  }
 
+for my $t(qw(t bdp bdps bst abdps))
+ {my $c = <<'END';
+sub check_XXXX($$$)                                                             #P Check that the top of the stack has one of XXXX
+ {my ($s, $i, $e) = @_;                                                         # Stack, index of current element, current element
+  return 1 if index("XXXX", type($$s[-1])) > -1;                                # Check type allowed
+  unexpected $$s[-1], $e, $i;                                                   # Complain about an unexpected type
+ }
+END
+       $c =~ s(XXXX) ($t)gs;
+  eval $c; $@ and confess "$@\n";
+ }
+
 for my $t(qw(abdps ads b B bdp bdps bpsv bst p pbsv s sb sbt v))                # Test various sets of items
  {my $c = <<'END';
 sub test_XXXX($)                                                                #P Check that we have XXXX
@@ -210,10 +222,13 @@ sub reduce($)                                                                   
       push @$s, new $d, $l, $r;
       return 1;
      }
-    if (test_b($l) and test_B($r) and test_t($d))                               # Parse parenthesized term
-     {pop  @$s for 1..3;
-      push @$s, $d;
-      return 1;
+    if (test_b($l))                                                             # Parse parenthesized term
+     {if (test_B($r) and test_t($d))                               # Parse parenthesized term
+       {if (test_t($d))                               # Parse parenthesized term
+       {pop  @$s for 1..3;
+        push @$s, $d;
+        return 1;
+       }
      }
    }
 
@@ -237,18 +252,6 @@ sub reduce($)                                                                   
    }
 
   undef                                                                         # No move made
- }
-
-for my $t(qw(t bdp bdps bst abdps))
- {my $c = <<'END';
-sub check_XXXX($$$)                                                             #P Check that the top of the stack has one of XXXX
- {my ($s, $i, $e) = @_;                                                         # Stack, index of current element, current element
-  return 1 if index("XXXX", type($$s[-1])) > -1;                                # Check type allowed
-  unexpected $$s[-1], $e, $i;                                                   # Complain about an unexpected type
- }
-END
-       $c =~ s(XXXX) ($t)gs;
-  eval $c; $@ and confess "$@\n";
  }
 
 sub parse(@)                                                                    # Parse an expression.
@@ -490,7 +493,7 @@ END
 Create a parse tree from an array of terms representing an expression.
 
 
-Version 20210714.
+Version 20210715.
 
 
 The following sections describe the methods in each functional area of this
