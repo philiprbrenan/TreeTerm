@@ -15,8 +15,10 @@ use feature qw(say state current_sub);
 
 #D1 Parse                                                                       # Create a parse tree from an array of terms representing an expression.
 
-sub new($@)                                                                     #P New term.
- {my ($operator, @operands) = @_;                                               # Operator, operands.
+sub new($$)                                                                     #P Create a new term from the indicated number of items on top of the stack
+ {my ($stack, $count) = @_;                                                     # Stack, number of terms
+
+  my ($operator, @operands) = splice  @$stack, -$count;                         # Remove lexical items from stack
 
   my $t = genHash(__PACKAGE__,                                                  # Description of a term in the expression.
      operands => @operands ? [@operands] : undef,                               # Operands to which the operator will be applied.
@@ -26,7 +28,7 @@ sub new($@)                                                                     
 
   $_->up = $t for grep {ref $_} @operands;                                      # Link to parent if possible
 
-  $t
+  push @$stack, $t;                                                             # Save newly created term on the stack
  }
 
 sub LexicalCode($$$)                                                            #P Lexical code definition
@@ -222,7 +224,8 @@ sub reduce($)                                                                   
      {if   (test_t($r))
        {if (test_ads($d))
          {pop  @$s for 1..3;
-          push @$s, new $d, $l, $r;
+          push @$s, $d, $l, $r;
+          new $s, 3;
           return 1;
          }
        }
@@ -244,7 +247,8 @@ sub reduce($)                                                                   
     if   (test_b($l))                                                           # Empty pair of parentheses
      {if (test_B($r))
        {pop  @$s for 1..2;
-        push @$s, new 'empty1';
+        push @$s, 'empty1';
+        new $s, 1;
         return 1;
        }
      }
@@ -257,8 +261,7 @@ sub reduce($)                                                                   
      }
     if (test_p($l))                                                             # Prefix, term
      {if (test_t($r))
-       {pop  @$s for 1..2;
-        push @$s, new $l, $r;
+       {new $s, 2;
         return 1;
        }
      }
@@ -305,14 +308,18 @@ sub accept_q($$$)                                                               
   check_t($s, $i, $e);
   if (ref $$s[-1])                                                              # Post fix operator applied to a term
    {my $p = pop @$s;
-    push @$s, new $e, $p;
+    push @$s, $e, $p;
+    new $s, 2;
    }
  }
 
 sub accept_s($$$)                                                               #P Semi colon
  {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_bst($s, $i, $e);
-  push @$s, new 'empty2' if test_sb($$s[-1]);                                   # Insert an empty element between two consecutive semicolons
+  if (test_sb($$s[-1]))                                                         # Insert an empty element between two consecutive semicolons
+   {push @$s, 'empty2';
+    new $s, 1;
+   }
   1 while reduce $s;
   push @$s, $e;
  }
@@ -320,12 +327,10 @@ sub accept_s($$$)                                                               
 sub accept_v($$$)                                                               #P Variable
  {my ($s, $i, $e) = @_;                                                         # Stack, position in input, lexical item to parse
   check_abdps($s, $i, $e);
-  push @$s, new $e;
+  push @$s, $e;
+  new $s, 1;
 
-  while(@$s >= 2 and 'p' eq type($$s[-2]))                                      # Check for preceding prefix operators
-   {my ($l, $r) = splice @$s, -2;
-    push @$s, new $l, $r;
-   }
+  new $s, 2 while @$s >= 2 and 'p' eq type($$s[-2]);                            # Check for preceding prefix operators
  }
                                                                                 # Action on each lexical item
 my $Accept =                                                                    # Dispatch the action associated with the lexical item
@@ -354,10 +359,13 @@ Expression must start with 'opening parenthesis', 'prefix
 operator', 'semi-colon' or 'variable', not $E.
 END
       if    (test_v($e))                                                        # Single variable
-       {@$s = (new $e);
+       {push @$s, $e;
+        new $s, 1;
        }
       elsif (test_s($e))                                                        # Semi
-       {@$s = (new('empty3'), $e);
+       {push @$s, 'empty3';
+        new $s, 1;
+        push @$s, $e;
        }
       else                                                                      # Not semi or variable
        {@$s = ($e);
@@ -572,78 +580,6 @@ B<Example:>
   END
    }
 
-
-=head2 accept_a($s, $i, $e)
-
-Assign
-
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
-
-=head2 accept_b($s, $i, $e)
-
-Open
-
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
-
-=head2 accept_B($s, $i, $e)
-
-Closing parenthesis
-
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
-
-=head2 accept_d($s, $i, $e)
-
-Infix but not assign or semi-colon
-
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
-
-=head2 accept_p($s, $i, $e)
-
-Prefix
-
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
-
-=head2 accept_q($s, $i, $e)
-
-Post fix
-
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
-
-=head2 accept_s($s, $i, $e)
-
-Semi colon
-
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
-
-=head2 accept_v($s, $i, $e)
-
-Variable
-
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
 
 =head2 parse(@expression)
 
@@ -1323,6 +1259,78 @@ Convert the longest possible expression on top of the stack into a term
      Parameter  Description
   1  $s         Stack
 
+=head2 accept_a($s, $i, $e)
+
+Assign
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_b($s, $i, $e)
+
+Open
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_B($s, $i, $e)
+
+Closing parenthesis
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_d($s, $i, $e)
+
+Infix but not assign or semi-colon
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_p($s, $i, $e)
+
+Prefix
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_q($s, $i, $e)
+
+Post fix
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_s($s, $i, $e)
+
+Semi colon
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
+=head2 accept_v($s, $i, $e)
+
+Variable
+
+     Parameter  Description
+  1  $s         Stack
+  2  $i         Position in input
+  3  $e         Lexical item to parse
+
 =head2 depth($term)
 
 Depth of a term in an expression.
@@ -1343,9 +1351,9 @@ List the terms in an expression in post order
 
 1 L<accept_a|/accept_a> - Assign
 
-2 L<accept_b|/accept_b> - Open
+2 L<accept_B|/accept_B> - Closing parenthesis
 
-3 L<accept_B|/accept_B> - Closing parenthesis
+3 L<accept_b|/accept_b> - Open
 
 4 L<accept_d|/accept_d> - Infix but not assign or semi-colon
 
@@ -1432,7 +1440,7 @@ test unless caller;
 
 1;
 # podDocumentation
-__DATA__
+#__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
