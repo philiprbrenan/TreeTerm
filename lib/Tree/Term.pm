@@ -217,6 +217,7 @@ sub reduce($)                                                                   
 
   if (@$s >= 3)                                                                 # Go for term infix-operator term
    {my ($l, $d, $r) = ($$s[-3], $$s[-2], $$s[-1]);                              # Left infix right
+
     if     (test_t($l))                                                         # Parse out infix operator expression
      {if   (test_t($r))
        {if (test_ads($d))
@@ -226,6 +227,7 @@ sub reduce($)                                                                   
          }
        }
      }
+
     if     (test_b($l))                                                         # Parse parenthesized term
      {if   (test_B($r))
        {if (test_t($d))
@@ -239,20 +241,26 @@ sub reduce($)                                                                   
 
   if (@$s >= 2)                                                                 # Convert an empty pair of parentheses to an empty term
    {my ($l, $r) = ($$s[-2], $$s[-1]);
-    if (test_b($l) and test_B($r))                                              # Empty pair of parentheses
-     {pop  @$s for 1..2;
-      push @$s, new 'empty1';
-      return 1;
+    if   (test_b($l))                                                           # Empty pair of parentheses
+     {if (test_B($r))
+       {pop  @$s for 1..2;
+        push @$s, new 'empty1';
+        return 1;
+       }
      }
-    if (test_s($l) and test_B($r))                                              # Semi-colon, close implies remove unneeded semi
-     {pop  @$s for 1..2;
-      push @$s, $r;
-      return 1;
+    if (test_s($l))                                                             # Semi-colon, close implies remove unneeded semi
+     {if (test_B($r))
+       {pop  @$s for 1..2;
+        push @$s, $r;
+        return 1;
+       }
      }
-    if (test_p($l) and test_t($r))                                              # Prefix, term
-     {pop  @$s for 1..2;
-      push @$s, new $l, $r;
-      return 1;
+    if (test_p($l))                                                             # Prefix, term
+     {if (test_t($r))
+       {pop  @$s for 1..2;
+        push @$s, new $l, $r;
+        return 1;
+       }
      }
    }
 
