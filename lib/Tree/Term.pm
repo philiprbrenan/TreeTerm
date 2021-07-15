@@ -267,6 +267,78 @@ sub reduce($)                                                                   
   undef                                                                         # No move made
  }
 
+sub accept_a($$$)                                                               # Assign
+ {my ($s, $i, $e) = @_;                                                         # Parameters
+  check_t($s, $i, $e);
+  push @$s, $e;
+ }
+
+sub accept_b($$$)                                                               # Open
+ {my ($s, $i, $e) = @_;
+  check_bdps($s, $i, $e);
+  push @$s, $e;
+ }
+
+sub accept_B($$$)                                                               # Closing parenthesis
+ {my ($s, $i, $e) = @_;
+  check_bst($s, $i, $e);
+  1 while reduce $s;
+  push @$s, $e;
+  1 while reduce $s;
+  check_bst($s, $i, $e);
+ }
+
+sub accept_d($$$)                                                               # Infix but not assign or semi-colon
+ {my ($s, $i, $e) = @_;
+  check_t($s, $i, $e);
+  push @$s, $e;
+ }
+
+sub accept_p($$$)                                                               # Prefix
+ {my ($s, $i, $e) = @_;
+  check_bdp($s, $i, $e);
+  push @$s, $e;
+ }
+
+sub accept_q($$$)                                                               # Post fix
+ {my ($s, $i, $e) = @_;
+  check_t($s, $i, $e);
+  if (ref $$s[-1])                                                              # Post fix operator applied to a term
+   {my $p = pop @$s;
+    push @$s, new $e, $p;
+   }
+ }
+
+sub accept_s($$$)                                                               # Semi colon
+ {my ($s, $i, $e) = @_;
+  check_bst($s, $i, $e);
+  push @$s, new 'empty5' if test_sb($$s[-1]);                                   # Insert an empty element between two consecutive semicolons
+  1 while reduce $s;
+  push @$s, $e;
+ }
+
+sub accept_v($$$)                                                               # Variable
+ {my ($s, $i, $e) = @_;
+  check_abdps($s, $i, $e);
+  push @$s, new $e;
+
+  while(@$s >= 2 and 'p' eq type($$s[-2]))                                      # Check for preceding prefix operators
+   {my ($l, $r) = splice @$s, -2;
+    push @$s, new $l, $r;
+   }
+ }
+                                                                                # Action on each lexical item
+my $Accept =                                                                    # Dispatch the action associated with the lexical item
+ {a => \&accept_a,                                                              # Assign
+  b => \&accept_b,                                                              # Open
+  B => \&accept_B,                                                              # Closing parenthesis
+  d => \&accept_d,                                                              # Infix but not assign or semi-colon
+  p => \&accept_p,                                                              # Prefix
+  q => \&accept_q,                                                              # Post fix
+  s => \&accept_s,                                                              # Semi colon
+  v => \&accept_v,                                                              # Variable
+ };
+
 sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
 
@@ -293,59 +365,7 @@ END
       next;
      }
                                                                                 # Action on each lexical item
-     {a => sub                                                                  # Assign
-       {check_t($s, $i, $e);
-        push @$s, $e;
-       },
-
-      b => sub                                                                  # Open
-       {check_bdps($s, $i, $e);
-        push @$s, $e;
-       },
-
-      B => sub                                                                  # Closing parenthesis
-       {check_bst($s, $i, $e);
-        1 while reduce $s;
-        push @$s, $e;
-        1 while reduce $s;
-        check_bst($s, $i, $e);
-       },
-
-      d => sub                                                                  # Infix but not assign or semi-colon
-       {check_t($s, $i, $e);
-        push @$s, $e;
-       },
-
-      p => sub                                                                  # Prefix
-       {check_bdp($s, $i, $e);
-        push @$s, $e;
-       },
-
-      q => sub                                                                  # Post fix
-       {check_t($s, $i, $e);
-        if (ref $$s[-1])                                                        # Post fix operator applied to a term
-         {my $p = pop @$s;
-          push @$s, new $e, $p;
-         }
-       },
-
-      s => sub                                                                  # Semi colon
-       {check_bst($s, $i, $e);
-        push @$s, new 'empty5' if test_sb($$s[-1]);                             # Insert an empty element between two consecutive semicolons
-        1 while reduce $s;
-        push @$s, $e;
-       },
-
-      v => sub                                                                  # Variable
-       {check_abdps($s, $i, $e);
-        push @$s, new $e;
-
-        while(@$s >= 2 and 'p' eq type($$s[-2]))                                # Check for preceding prefix operators
-         {my ($l, $r) = splice @$s, -2;
-          push @$s, new $l, $r;
-         }
-       },
-     }->{substr($e, 0, 1)}->();                                                 # Dispatch the action associated with the lexical item
+    $$Accept{substr($e, 0, 1)}->($s, $i, $e);                                   # Dispatch the action associated with the lexical item
    }
 
   pop @$s while @$s > 1 and $$s[-1] =~ m(s);                                    # Remove any trailing semi colons
