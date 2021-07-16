@@ -207,7 +207,7 @@ sub test_XXXX($)                                                                
   !ref($item) and index('XXXX',  substr($item, 0, 1)) > -1
  }
 END
-       $c =~ s(XXXX) ($t)gs;
+         $c =~ s(XXXX) ($t)gs;
     eval $c; $@ and confess "$@\n";
    }
  }
