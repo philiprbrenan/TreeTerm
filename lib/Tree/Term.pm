@@ -364,7 +364,7 @@ END
       next;
      }
 
-    $$Accept{substr($e, 0, 1)}->();                                             # Dispatch the action associated with the lexical item
+    $$Accept{substr($e, 0, 1)}();                                               # Dispatch the action associated with the lexical item
    }
 
   pop @$stack while @$stack > 1 and $$stack[-1] =~ m(s);                        # Remove any trailing semi colons
