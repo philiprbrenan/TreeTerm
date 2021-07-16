@@ -14,9 +14,10 @@ use Data::Table::Text qw(:all);
 use feature qw(say state current_sub);
 
 #D1 Parse                                                                       # Create a parse tree from an array of terms representing an expression.
+my $stack = [];                                                                 # Stack of lexical items
 
-sub new($$)                                                                     #P Create a new term from the indicated number of items on top of the stack
- {my ($stack, $count) = @_;                                                     # Stack, number of terms
+sub new($)                                                                      #P Create a new term from the indicated number of items on top of the stack
+ {my ($count) = @_;                                                             # Number of terms
 
   my ($operator, @operands) = splice  @$stack, -$count;                         # Remove lexical items from stack
 
@@ -187,10 +188,10 @@ END
 
 for my $t(qw(t bdp bdps bst abdps))
  {my $c = <<'END';
-sub check_XXXX($$$)                                                             #P Check that the top of the stack has one of XXXX
- {my ($s, $i, $e) = @_;                                                         # Stack, index of current element, current element
-  return 1 if index("XXXX", type($$s[-1])) > -1;                                # Check type allowed
-  unexpected $$s[-1], $e, $i;                                                   # Complain about an unexpected type
+sub check_XXXX($$)                                                              #P Check that the top of the stack has one of XXXX
+ {my ($i, $e) = @_;                                                             # Index of current element, current element
+  return 1 if index("XXXX", type($$stack[-1])) > -1;                            # Check type allowed
+  unexpected $$stack[-1], $e, $i;                                               # Complain about an unexpected type
  }
 END
        $c =~ s(XXXX) ($t)gs;
@@ -213,9 +214,8 @@ sub test_t($)                                                                   
   ref $item
  }
 
-sub reduce($)                                                                   #P Convert the longest possible expression on top of the stack into a term
- {my ($stack) = @_;                                                             # Stack
-  #lll "TTTT ", scalar(@s), "\n", dump([@s]);
+sub reduce()                                                                    #P Convert the longest possible expression on top of the stack into a term
+ {#lll "TTTT ", scalar(@s), "\n", dump([@s]);
 
   if (@$stack >= 3)                                                             # Go for term infix-operator term
    {my ($l, $d, $r) = ($$stack[-3], $$stack[-2], $$stack[-1]);                  # Left infix right
@@ -225,7 +225,7 @@ sub reduce($)                                                                   
        {if (test_ads($d))
          {pop  @$stack for 1..3;
           push @$stack, $d, $l, $r;
-          new $stack, 3;
+          new 3;
           return 1;
          }
        }
@@ -248,7 +248,7 @@ sub reduce($)                                                                   
      {if (test_B($r))
        {pop  @$stack for 1..2;
         push @$stack, 'empty1';
-        new $stack, 1;
+        new 1;
         return 1;
        }
      }
@@ -261,7 +261,7 @@ sub reduce($)                                                                   
      }
     if (test_p($l))                                                             # Prefix, term
      {if (test_t($r))
-       {new $stack, 2;
+       {new 2;
         return 1;
        }
      }
@@ -270,67 +270,67 @@ sub reduce($)                                                                   
   undef                                                                         # No move made
  }
 
-sub accept_a($$$)                                                               #P Assign
- {my ($stack, $i, $e) = @_;                                                     # Stack, position in input, lexical item to parse
-  check_t($stack, $i, $e);
+sub accept_a($$)                                                                #P Assign
+ {my ($i, $e) = @_;                                                             # Position in input, lexical item to parse
+  check_t($i, $e);
   push @$stack, $e;
  }
 
-sub accept_b($$$)                                                               #P Open
- {my ($stack, $i, $e) = @_;                                                     # Stack, position in input, lexical item to parse
-  check_bdps($stack, $i, $e);
+sub accept_b($$)                                                                #P Open
+ {my ($i, $e) = @_;                                                             # Position in input, lexical item to parse
+  check_bdps($i, $e);
   push @$stack, $e;
  }
 
-sub accept_B($$$)                                                               #P Closing parenthesis
- {my ($stack, $i, $e) = @_;                                                     # Stack, position in input, lexical item to parse
-  check_bst($stack, $i, $e);
-  1 while reduce $stack;
+sub accept_B($$)                                                                #P Closing parenthesis
+ {my ($i, $e) = @_;                                                             # Position in input, lexical item to parse
+  check_bst($i, $e);
+  1 while reduce;
   push @$stack, $e;
-  1 while reduce $stack;
-  check_bst($stack, $i, $e);
+  1 while reduce;
+  check_bst($i, $e);
  }
 
-sub accept_d($$$)                                                               #P Infix but not assign or semi-colon
- {my ($stack, $i, $e) = @_;                                                     # Stack, position in input, lexical item to parse
-  check_t($stack, $i, $e);
-  push @$stack, $e;
- }
-
-sub accept_p($$$)                                                               #P Prefix
- {my ($stack, $i, $e) = @_;                                                     # Stack, position in input, lexical item to parse
-  check_bdp($stack, $i, $e);
+sub accept_d($$)                                                                #P Infix but not assign or semi-colon
+ {my ($i, $e) = @_;                                                             # Position in input, lexical item to parse
+  check_t($i, $e);
   push @$stack, $e;
  }
 
-sub accept_q($$$)                                                               #P Post fix
- {my ($stack, $i, $e) = @_;                                                     # Stack, position in input, lexical item to parse
-  check_t($stack, $i, $e);
+sub accept_p($$)                                                                #P Prefix
+ {my ($i, $e) = @_;                                                             # Position in input, lexical item to parse
+  check_bdp($i, $e);
+  push @$stack, $e;
+ }
+
+sub accept_q($$)                                                                #P Post fix
+ {my ($i, $e) = @_;                                                             # Position in input, lexical item to parse
+  check_t($i, $e);
   if (ref $$stack[-1])                                                          # Post fix operator applied to a term
    {my $p = pop @$stack;
     push @$stack, $e, $p;
-    new $stack, 2;
+    new 2;
    }
  }
 
-sub accept_s($$$)                                                               #P Semi colon
- {my ($stack, $i, $e) = @_;                                                     # Stack, position in input, lexical item to parse
-  check_bst($stack, $i, $e);
+sub accept_s($$)                                                                #P Semi colon
+ {my ($i, $e) = @_;                                                             # Position in input, lexical item to parse
+  check_bst($i, $e);
   if (test_sb($$stack[-1]))                                                     # Insert an empty element between two consecutive semicolons
    {push @$stack, 'empty2';
-    new $stack, 1;
+    new 1;
    }
-  1 while reduce $stack;
+  1 while reduce;
   push @$stack, $e;
  }
 
-sub accept_v($$$)                                                               #P Variable
- {my ($stack, $i, $e) = @_;                                                     # Stack, position in input, lexical item to parse
-  check_abdps($stack, $i, $e);
+sub accept_v($$)                                                                #P Variable
+ {my ($i, $e) = @_;                                                             # Position in input, lexical item to parse
+  check_abdps($i, $e);
   push @$stack, $e;
-  new $stack, 1;
+  new 1;
 
-  new $stack, 2 while @$stack >= 2 and 'p' eq type($$stack[-2]);                # Check for preceding prefix operators
+  new 2 while @$stack >= 2 and 'p' eq type($$stack[-2]);                        # Check for preceding prefix operators
  }
                                                                                 # Action on each lexical item
 my $Accept =                                                                    # Dispatch the action associated with the lexical item
@@ -346,8 +346,7 @@ my $Accept =                                                                    
 
 sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
-
-  my $stack = [];                                                               # Stack
+  $stack = [];                                                                  # Clear the stack - the things we do to speed things up.
 
   for my $i(keys @expression)                                                   # Each input element
    {my $e = $expression[$i];
@@ -360,11 +359,11 @@ operator', 'semi-colon' or 'variable', not $E.
 END
       if    (test_v($e))                                                        # Single variable
        {push @$stack, $e;
-        new $stack, 1;
+        new 1;
        }
       elsif (test_s($e))                                                        # Semi
        {push @$stack, 'empty3';
-        new $stack, 1;
+        new 1;
         push @$stack, $e;
        }
       else                                                                      # Not semi or variable
@@ -373,11 +372,11 @@ END
       next;
      }
 
-    $$Accept{substr($e, 0, 1)}->($stack, $i, $e);                               # Dispatch the action associated with the lexical item
+    $$Accept{substr($e, 0, 1)}->($i, $e);                                       # Dispatch the action associated with the lexical item
    }
 
   pop @$stack while @$stack > 1 and $$stack[-1] =~ m(s);                        # Remove any trailing semi colons
-  1 while reduce $stack;                                                        # Final reductions
+  1 while reduce;                                                               # Final reductions
 
   if (@$stack != 1)                                                             # Incomplete expression
    {my $E = expected $expression[-1];
