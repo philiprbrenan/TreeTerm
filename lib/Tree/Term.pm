@@ -13,8 +13,6 @@ use Data::Dump qw(dump ddx pp);
 use Data::Table::Text qw(:all);
 use feature qw(say state current_sub);
 
-say STDERR qx(perl -v); exit;
-
 #D1 Parse                                                                       # Create a parse tree from an array of terms representing an expression.
 my $stack      = undef;                                                         # Stack of lexical items
 my $expression = undef;                                                         # Expression being parsed
