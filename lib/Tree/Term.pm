@@ -14,7 +14,9 @@ use Data::Table::Text qw(:all);
 use feature qw(say state current_sub);
 
 #D1 Parse                                                                       # Create a parse tree from an array of terms representing an expression.
-my $stack = [];                                                                 # Stack of lexical items
+my $stack      = undef;                                                         # Stack of lexical items
+my $expression = undef;                                                         # Expression being parsed
+my $position   = undef;                                                         # Position in expression
 
 sub new($)                                                                      #P Create a new term from the indicated number of items on top of the stack
  {my ($count) = @_;                                                             # Number of terms
@@ -397,11 +399,15 @@ END
 sub parse(@)                                                                    # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
   my $s = $stack;
-     $stack = [];                                                               # Clear the stack - the things we do to speed things up.
+          $stack = [];                                                          # Clear the current stack - the things we do to speed things up.
+  my $x = $expression;
+          $expression = \@expression;                                           # Clear the current expression
+  my $p = $position;
+          $position   = 0;                                                      # Clear the current parse position
   my $e = eval {parseExpression @expression};
-  my $r = $@;
-  $stack = $s;                                                                  # Restore the stack
-  die $r if $r;                                                                 # Die again if we died  the last time
+  my $r = $@;                                                                   # Save any error message
+  $stack = $s; $expression = $x;                                                # Restore the stack and expression being parsed
+  die $r if $r;                                                                 # Die again if we died the last time
   $e                                                                            # Otherwise return the parse tree
  } # parse
 
