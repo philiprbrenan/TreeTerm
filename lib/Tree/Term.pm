@@ -13,6 +13,8 @@ use Data::Dump qw(dump ddx pp);
 use Data::Table::Text qw(:all);
 use feature qw(say state current_sub);
 
+say STDERR qx(perl -v); exit;
+
 #D1 Parse                                                                       # Create a parse tree from an array of terms representing an expression.
 my $stack      = undef;                                                         # Stack of lexical items
 my $expression = undef;                                                         # Expression being parsed
@@ -469,9 +471,8 @@ sub flat($@)                                                                    
 
   shift @s while @s and $s[ 0] =~ m(\A\s*\Z)s;                                  # Remove leading blank lines
 
-  for my $i(keys @s)                                                            # Clean up trailing blanks so that tests are not affected by spurious white space mismatches
-   {$s[$i] =~ s/\s+\n/\n/gs;
-    $s[$i] =~ s/\s+\Z//gs;
+  for(@s)                                                                       # Clean up trailing blanks so that tests are not affected by spurious white space mismatches
+   {s/\s+\n/\n/gs; s/\s+\Z//gs;
    }
 
   unshift @s, join(' ', @title) if @title;                                      # Add title
