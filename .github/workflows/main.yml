@@ -1,4 +1,4 @@
-# Test Tree::Term 2021-07-16 at 19:25:19
+# Test Tree::Term 2021-07-16 at 21:51:45
 
 name: Test
 
@@ -33,6 +33,7 @@ jobs:
     - name: Test
       run: |
         perl -Ilib/ test.pl
+        perl lib/Tree/Term.pm
 
   mac:
     runs-on: macOS-latest
@@ -57,3 +58,4 @@ jobs:
     - name: Test
       run: |
         perl -Ilib/ test.pl
+        perl lib/Tree/Term.pm
