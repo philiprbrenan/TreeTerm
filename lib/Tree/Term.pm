@@ -303,11 +303,9 @@ sub accept_p()                                                                  
 
 sub accept_q()                                                                  #P Post fix
  {check_t;
-  if (ref $$stack[-1])                                                          # Post fix operator applied to a term
-   {my $p = pop @$stack;
-    push @$stack, $$expression[$position], $p;
-    new 2;
-   }
+  my $p = pop @$stack;
+  push @$stack, $$expression[$position], $p;
+  new 2;
  }
 
 sub accept_s()                                                                  #P Semi colon
@@ -339,7 +337,7 @@ my $Accept =                                                                    
   v => \&accept_v,                                                              # Variable
  };
 
-sub parseExpression()                                                           # Parse an expression.
+sub parseExpression()                                                           #P Parse an expression.
  {for my $i(keys @$expression)                                                  # Each input element
    {my $e = $$expression[$position = $i];
 
@@ -387,17 +385,19 @@ END
  } # parseExpression
 
 sub parse(@)                                                                    # Parse an expression.
- {my (@expression) = @_;                                                        # Expression to parse
+ {my (@expression)    = @_;                                                     # Expression to parse
   my $s = $stack;
-          $stack = [];                                                          # Clear the current stack - the things we do to speed things up.
+          $stack      = [];                                                     # Clear the current stack - the things we do to speed things up.
   my $x = $expression;
           $expression = \@expression;                                           # Clear the current expression
   my $p = $position;
           $position   = 0;                                                      # Clear the current parse position
+
   my $e = eval {parseExpression};
   my $r = $@;                                                                   # Save any error message
   $stack = $s; $expression = $x;                                                # Restore the stack and expression being parsed
   die $r if $r;                                                                 # Die again if we died the last time
+
   $e                                                                            # Otherwise return the parse tree
  } # parse
 
@@ -1181,13 +1181,12 @@ Lexical items we can end with
 
 =head1 Private Methods
 
-=head2 new($operator, @operands)
+=head2 new($count)
 
-New term.
+Create a new term from the indicated number of items on top of the stack
 
      Parameter  Description
-  1  $operator  Operator
-  2  @operands  Operands.
+  1  $count     Number of terms
 
 =head2 LexicalCode($letter, $next, $name)
 
@@ -1235,14 +1234,10 @@ Complain about an unexpected element
   2  $unexpected  Unexpected element
   3  $position    Position
 
-=head2 check_XXXX($s, $i, $e)
+=head2 check_XXXX()
 
 Check that the top of the stack has one of XXXX
 
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Index of current element
-  3  $e         Current element
 
 =head2 test_XXXX($item)
 
@@ -1258,84 +1253,55 @@ Check that we have a semi-colon
      Parameter  Description
   1  $item      Item to test
 
-=head2 reduce($s)
+=head2 reduce()
 
 Convert the longest possible expression on top of the stack into a term
 
-     Parameter  Description
-  1  $s         Stack
 
-=head2 accept_a($s, $i, $e)
+=head2 accept_a()
 
 Assign
 
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
 
-=head2 accept_b($s, $i, $e)
+=head2 accept_b()
 
 Open
 
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
 
-=head2 accept_B($s, $i, $e)
+=head2 accept_B()
 
 Closing parenthesis
 
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
 
-=head2 accept_d($s, $i, $e)
+=head2 accept_d()
 
 Infix but not assign or semi-colon
 
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
 
-=head2 accept_p($s, $i, $e)
+=head2 accept_p()
 
 Prefix
 
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
 
-=head2 accept_q($s, $i, $e)
+=head2 accept_q()
 
 Post fix
 
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
 
-=head2 accept_s($s, $i, $e)
+=head2 accept_s()
 
 Semi colon
 
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
 
-=head2 accept_v($s, $i, $e)
+=head2 accept_v()
 
 Variable
 
-     Parameter  Description
-  1  $s         Stack
-  2  $i         Position in input
-  3  $e         Lexical item to parse
+
+=head2 parseExpression()
+
+Parse an expression.
+
 
 =head2 depth($term)
 
@@ -1357,9 +1323,9 @@ List the terms in an expression in post order
 
 1 L<accept_a|/accept_a> - Assign
 
-2 L<accept_B|/accept_B> - Closing parenthesis
+2 L<accept_b|/accept_b> - Open
 
-3 L<accept_b|/accept_b> - Open
+3 L<accept_B|/accept_B> - Closing parenthesis
 
 4 L<accept_d|/accept_d> - Infix but not assign or semi-colon
 
@@ -1389,21 +1355,23 @@ List the terms in an expression in post order
 
 17 L<listTerms|/listTerms> - List the terms in an expression in post order
 
-18 L<new|/new> - New term.
+18 L<new|/new> - Create a new term from the indicated number of items on top of the stack
 
 19 L<parse|/parse> - Parse an expression.
 
-20 L<reduce|/reduce> - Convert the longest possible expression on top of the stack into a term
+20 L<parseExpression|/parseExpression> - Parse an expression.
 
-21 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
+21 L<reduce|/reduce> - Convert the longest possible expression on top of the stack into a term
 
-22 L<test_t|/test_t> - Check that we have a semi-colon
+22 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
 
-23 L<test_XXXX|/test_XXXX> - Check that we have XXXX
+23 L<test_t|/test_t> - Check that we have a semi-colon
 
-24 L<type|/type> - Type of term
+24 L<test_XXXX|/test_XXXX> - Check that we have XXXX
 
-25 L<unexpected|/unexpected> - Complain about an unexpected element
+25 L<type|/type> - Type of term
+
+26 L<unexpected|/unexpected> - Complain about an unexpected element
 
 =head1 Installation
 
