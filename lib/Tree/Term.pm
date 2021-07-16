@@ -3,6 +3,7 @@
 # Create a parse tree from an array of terms representing an expression.
 # Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2021
 #-------------------------------------------------------------------------------
+# podDocumentation
 package Tree::Term;
 use v5.26;
 our $VERSION = 20210716;                                                        # Version
@@ -1413,7 +1414,7 @@ test unless caller;
 
 1;
 # podDocumentation
-#__DATA__
+__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
@@ -1423,7 +1424,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
-if ($^O =~ m(bsd|linux)i)                                                       # Supported systems
+if ($^O =~ m(bsd|linux|darwin)i)                                                # Supported systems
  {plan tests => 50
  }
 else
