@@ -68,7 +68,6 @@ sub LexicalStructure()                                                          
 
 sub type($)                                                                     #P Type of term
  {my ($s) = @_;                                                                 # Term to test
-defined($s) or confess "no s";
   return 't' if ref $s;                                                         # Term on top of stack
   substr($s, 0, 1);                                                             # Something other than a term defines its type by its first letter
  }
@@ -76,7 +75,7 @@ defined($s) or confess "no s";
 sub expandElement($)                                                            #P Describe a lexical element
  {my ($e) = @_;                                                                 # Element to expand
   my $x = $LexicalCodes->{type $e}->name;                                       # Expansion
-  "'$x': $e"
+   "'$x': $e"
  }
 
 sub expandCodes($)                                                              #P Expand a string of codes
@@ -347,11 +346,9 @@ my $Accept =                                                                    
   v => \&accept_v,                                                              # Variable
  };
 
-sub parseExpression(@)                                                          # Parse an expression.
- {my (@expression) = @_;                                                        # Expression to parse
-
-  for my $i(keys @expression)                                                   # Each input element
-   {my $e = $expression[$i];
+sub parseExpression()                                                           # Parse an expression.
+ {for my $i(keys @$expression)                                                   # Each input element
+   {my $e = $$expression[$i];
 
     if (!@$stack)                                                               # Empty stack
      {my $E = expandElement $e;
@@ -381,13 +378,13 @@ END
   1 while reduce;                                                               # Final reductions
 
   if (@$stack != 1)                                                             # Incomplete expression
-   {my $E = expected $expression[-1];
+   {my $E = expected $$expression[-1];
     die "Incomplete expression. $E.\n";
    }
 
-  if (index($last,   type $expression[-1]) == -1)                               # Incomplete expression
-   {my $C = expandElement $expression[-1];
-    my $E = expected      $expression[-1];
+  if (index($last,   type $$expression[-1]) == -1)                              # Incomplete expression
+   {my $C = expandElement $$expression[-1];
+    my $E = expected      $$expression[-1];
     die <<END;
 $E after final $C.
 END
@@ -404,7 +401,7 @@ sub parse(@)                                                                    
           $expression = \@expression;                                           # Clear the current expression
   my $p = $position;
           $position   = 0;                                                      # Clear the current parse position
-  my $e = eval {parseExpression @expression};
+  my $e = eval {parseExpression};
   my $r = $@;                                                                   # Save any error message
   $stack = $s; $expression = $x;                                                # Restore the stack and expression being parsed
   die $r if $r;                                                                 # Die again if we died the last time
