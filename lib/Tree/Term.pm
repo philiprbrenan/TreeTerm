@@ -66,6 +66,7 @@ sub LexicalStructure()                                                          
 
 sub type($)                                                                     #P Type of term
  {my ($s) = @_;                                                                 # Term to test
+defined($s) or confess "no s";
   return 't' if ref $s;                                                         # Term on top of stack
   substr($s, 0, 1);                                                             # Something other than a term defines its type by its first letter
  }
@@ -344,9 +345,8 @@ my $Accept =                                                                    
   v => \&accept_v,                                                              # Variable
  };
 
-sub parse(@)                                                                    # Parse an expression.
+sub parseExpression(@)                                                          # Parse an expression.
  {my (@expression) = @_;                                                        # Expression to parse
-  $stack = [];                                                                  # Clear the stack - the things we do to speed things up.
 
   for my $i(keys @expression)                                                   # Each input element
    {my $e = $expression[$i];
@@ -392,6 +392,17 @@ END
    }
 
   $$stack[0]                                                                    # The resulting parse tree
+ } # parseExpression
+
+sub parse(@)                                                                    # Parse an expression.
+ {my (@expression) = @_;                                                        # Expression to parse
+  my $s = $stack;
+     $stack = [];                                                               # Clear the stack - the things we do to speed things up.
+  my $e = eval {parseExpression @expression};
+  my $r = $@;
+  $stack = $s;                                                                  # Restore the stack
+  die $r if $r;                                                                 # Die again if we died  the last time
+  $e                                                                            # Otherwise return the parse tree
  } # parse
 
 #D1 Print                                                                       # Print a parse tree to make it easy to visualize its structure.
