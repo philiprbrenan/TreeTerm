@@ -196,11 +196,11 @@ sub check_XXXX()                                                                
   unexpected $$stack[-1], $$expression[$position], $position;                   # Complain about an unexpected type
  }
 END
-       $c =~ s(XXXX) ($t)gs;
+         $c =~ s(XXXX) ($t)gs;
     eval $c; $@ and confess "$@\n";
    }
 
-  for my $t(qw(abdps ads b B bdp bdps bpsv bst p pbsv s sb sbt v))                # Test various sets of items
+  for my $t(qw(abdps ads b B bdp bdps bpsv bst p pbsv s sb sbt v))              # Test various sets of items
    {my $c = <<'END';
 sub test_XXXX($)                                                                #P Check that we have XXXX
  {my ($item) = @_;                                                              # Item to test
@@ -273,17 +273,17 @@ sub reduce()                                                                    
   undef                                                                         # No move made
  }
 
-sub accept_a()                                                                #P Assign
+sub accept_a()                                                                  #P Assign
  {check_t;
   push @$stack, $$expression[$position];
  }
 
-sub accept_b()                                                                #P Open
+sub accept_b()                                                                  #P Open
  {check_bdps;
   push @$stack, $$expression[$position];
  }
 
-sub accept_B()                                                                #P Closing parenthesis
+sub accept_B()                                                                  #P Closing parenthesis
  {check_bst;
   1 while reduce;
   push @$stack, $$expression[$position];
@@ -291,17 +291,17 @@ sub accept_B()                                                                #P
   check_bst;
  }
 
-sub accept_d()                                                                #P Infix but not assign or semi-colon
+sub accept_d()                                                                  #P Infix but not assign or semi-colon
  {check_t;
   push @$stack, $$expression[$position];
  }
 
-sub accept_p()                                                                #P Prefix
+sub accept_p()                                                                  #P Prefix
  {check_bdp;
   push @$stack, $$expression[$position];
  }
 
-sub accept_q()                                                                #P Post fix
+sub accept_q()                                                                  #P Post fix
  {check_t;
   if (ref $$stack[-1])                                                          # Post fix operator applied to a term
    {my $p = pop @$stack;
@@ -310,7 +310,7 @@ sub accept_q()                                                                #P
    }
  }
 
-sub accept_s()                                                                #P Semi colon
+sub accept_s()                                                                  #P Semi colon
  {check_bst;
   if (test_sb($$stack[-1]))                                                     # Insert an empty element between two consecutive semicolons
    {push @$stack, 'empty2';
@@ -320,7 +320,7 @@ sub accept_s()                                                                #P
   push @$stack, $$expression[$position];
  }
 
-sub accept_v()                                                                #P Variable
+sub accept_v()                                                                  #P Variable
  {check_abdps;
   push @$stack, $$expression[$position];
   new 1;
@@ -341,8 +341,7 @@ my $Accept =                                                                    
 
 sub parseExpression()                                                           # Parse an expression.
  {for my $i(keys @$expression)                                                  # Each input element
-   {          $position = $i;                                                   # Position in parse
-     my $e = $$expression[$i];
+   {my $e = $$expression[$position = $i];
 
     if (!@$stack)                                                               # Empty stack
      {my $E = expandElement $e;
