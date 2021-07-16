@@ -310,7 +310,7 @@ sub accept_q()                                                                  
 
 sub accept_s()                                                                  #P Semi colon
  {check_bst;
-  if (test_sb($$stack[-1]))                                                     # Insert an empty element between two consecutive semicolons
+  if (!test_t($$stack[-1]))                                                     # Insert an empty element between two consecutive semicolons
    {push @$stack, 'empty2';
     new 1;
    }
