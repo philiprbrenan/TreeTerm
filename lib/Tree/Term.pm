@@ -200,7 +200,7 @@ END
     eval $c; $@ and confess "$@\n";
    }
 
-  for my $t(qw(abdps ads b B bdp bdps bpsv bst p pbsv s sb sbt v))              # Test various sets of items
+  for my $t(qw(abdps ads b B bdp bdps bpsv bst p pbsv s sbt v))                 # Test various sets of items
    {my $c = <<'END';
 sub test_XXXX($)                                                                #P Check that we have XXXX
  {my ($item) = @_;                                                              # Item to test
