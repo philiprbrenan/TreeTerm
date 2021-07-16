@@ -464,7 +464,7 @@ sub flat($@)                                                                    
     align if $p =~ m(\A(a|d|s));                                                # Shift over for some components
 
     $s[$d] .= " $p";                                                            # Describe operator or operand
-    align unless $p =~ m(\A(p|q|v));                                            # Vertical for some components
+    align if $p !~ m(\A(p|q|v));                                                # Vertical for some components
    }
 
   shift @s while @s and $s[ 0] =~ m(\A\s*\Z)s;                                  # Remove leading blank lines
