@@ -270,7 +270,7 @@ sub reduce()                                                                    
      }
    }
 
-  undef                                                                         # No move made
+  0                                                                             # No move made
  }
 
 sub accept_a()                                                                  #P Assign
