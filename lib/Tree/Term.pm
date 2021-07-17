@@ -324,7 +324,7 @@ sub accept_v()                                                                  
   push @$stack, $$expression[$position];
   new 1;
 
-  new 2 while @$stack >= 2 and 'p' eq type($$stack[-2]);                        # Check for preceding prefix operators
+  new 2 while @$stack >= 2 and test_p($$stack[-2]);                             # Check for preceding prefix operators
  }
                                                                                 # Action on each lexical item
 my $Accept =                                                                    # Dispatch the action associated with the lexical item
