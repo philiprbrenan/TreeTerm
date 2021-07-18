@@ -351,13 +351,12 @@ END
      {push @$stack, $e;
       new 1;
      }
-    elsif (test_s($e))                                                          # Semi
-     {push @$stack, 'empty3';
-      new 1;
+    else
+     {if (test_s($e))                                                           # Semi
+       {push @$stack, 'empty3';
+        new 1;
+       }
       push @$stack, $e;
-     }
-    else                                                                        # Not semi or variable
-     {@$stack = ($e);
      }
    }
   else                                                                          # Empty expression
