@@ -339,8 +339,8 @@ my $Accept =                                                                    
  };
 
 sub parseExpression()                                                           #P Parse an expression.
- {for(keys @$expression)                                                        # Each input element
-   {my $e = $$expression[$position = $_];
+ {if (1)
+   {my $e = $$expression[$position = 0];
 
     if (!@$stack)                                                               # Empty stack
      {my $E = expandElement $e;
@@ -360,10 +360,11 @@ END
       else                                                                      # Not semi or variable
        {@$stack = ($e);
        }
-      next;
      }
+   }
 
-    $$Accept{substr($e, 0, 1)}();                                               # Dispatch the action associated with the lexical item
+  for(1..$#$expression)                                                         # Each input element
+   {$$Accept{substr($$expression[$position = $_], 0, 1)}();                     # Dispatch the action associated with the lexical item
    }
 
   pop @$stack while @$stack > 1 and $$stack[-1] =~ m(s);                        # Remove any trailing semi colons
