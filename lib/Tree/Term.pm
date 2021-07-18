@@ -339,7 +339,7 @@ my $Accept =                                                                    
  };
 
 sub parseExpression()                                                           #P Parse an expression.
- {if (1)
+ {if (@$expression)
    {my $e = $$expression[$position = 0];
 
     my $E = expandElement $e;
@@ -347,18 +347,21 @@ sub parseExpression()                                                           
 Expression must start with 'opening parenthesis', 'prefix
 operator', 'semi-colon' or 'variable', not $E.
 END
-    if    (test_v($e))                                                        # Single variable
+    if    (test_v($e))                                                          # Single variable
      {push @$stack, $e;
       new 1;
      }
-    elsif (test_s($e))                                                        # Semi
+    elsif (test_s($e))                                                          # Semi
      {push @$stack, 'empty3';
       new 1;
       push @$stack, $e;
      }
-    else                                                                      # Not semi or variable
+    else                                                                        # Not semi or variable
      {@$stack = ($e);
      }
+   }
+  else                                                                          # Empty expression
+   {return undef;
    }
 
   for(1..$#$expression)                                                         # Each input element
