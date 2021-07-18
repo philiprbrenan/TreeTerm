@@ -342,24 +342,22 @@ sub parseExpression()                                                           
  {if (1)
    {my $e = $$expression[$position = 0];
 
-    if (!@$stack)                                                               # Empty stack
-     {my $E = expandElement $e;
-      die <<END =~ s(\n) ( )gsr =~ s(\s+\Z) (\n)gsr if !test_bpsv($e);
+    my $E = expandElement $e;
+    die <<END =~ s(\n) ( )gsr =~ s(\s+\Z) (\n)gsr if !test_bpsv($e);
 Expression must start with 'opening parenthesis', 'prefix
 operator', 'semi-colon' or 'variable', not $E.
 END
-      if    (test_v($e))                                                        # Single variable
-       {push @$stack, $e;
-        new 1;
-       }
-      elsif (test_s($e))                                                        # Semi
-       {push @$stack, 'empty3';
-        new 1;
-        push @$stack, $e;
-       }
-      else                                                                      # Not semi or variable
-       {@$stack = ($e);
-       }
+    if    (test_v($e))                                                        # Single variable
+     {push @$stack, $e;
+      new 1;
+     }
+    elsif (test_s($e))                                                        # Semi
+     {push @$stack, 'empty3';
+      new 1;
+      push @$stack, $e;
+     }
+    else                                                                      # Not semi or variable
+     {@$stack = ($e);
      }
    }
 
