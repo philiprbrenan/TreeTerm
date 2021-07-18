@@ -339,8 +339,8 @@ my $Accept =                                                                    
  };
 
 sub parseExpression()                                                           #P Parse an expression.
- {for my $i(keys @$expression)                                                  # Each input element
-   {my $e = $$expression[$position = $i];
+ {for(keys @$expression)                                                        # Each input element
+   {my $e = $$expression[$position = $_];
 
     if (!@$stack)                                                               # Empty stack
      {my $E = expandElement $e;
@@ -396,7 +396,7 @@ sub parse(@)                                                                    
 
   my $e = eval {parseExpression};
   my $r = $@;                                                                   # Save any error message
-  $stack = $s; $expression = $x;                                                # Restore the stack and expression being parsed
+  $stack = $s; $expression = $x; $position = $p;                                # Restore the stack and expression being parsed
   die $r if $r;                                                                 # Die again if we died the last time
 
   $e                                                                            # Otherwise return the parse tree
