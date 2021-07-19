@@ -367,7 +367,7 @@ END
    {$$Accept{substr($$expression[$position = $_], 0, 1)}();                     # Dispatch the action associated with the lexical item
    }
 
-  if (index($last,   type $$expression[-1]) == -1)                              # Incomplete expression
+  if (index($last,   type $$expression[-1]) == -1)                              # Check for incomplete expression
    {my $C = expandElement $$expression[-1];
     my $E = expected      $$expression[-1];
     die <<END;
