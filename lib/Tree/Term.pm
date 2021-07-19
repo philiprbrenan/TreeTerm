@@ -367,20 +367,20 @@ END
    {$$Accept{substr($$expression[$position = $_], 0, 1)}();                     # Dispatch the action associated with the lexical item
    }
 
-  pop @$stack while @$stack > 1 and $$stack[-1] =~ m(s);                        # Remove any trailing semi colons
-  1 while reduce;                                                               # Final reductions
-
-  if (@$stack != 1)                                                             # Incomplete expression
-   {my $E = expected $$expression[-1];
-    die "Incomplete expression. $E.\n";
-   }
-
   if (index($last,   type $$expression[-1]) == -1)                              # Incomplete expression
    {my $C = expandElement $$expression[-1];
     my $E = expected      $$expression[-1];
     die <<END;
 $E after final $C.
 END
+   }
+
+  pop @$stack while @$stack > 1 and $$stack[-1] =~ m(s);                        # Remove any trailing semi colons
+  1 while reduce;                                                               # Final reductions
+
+  if (@$stack != 1)                                                             # Incomplete expression
+   {my $E = expected $$expression[-1];
+    die "Incomplete expression. $E.\n";
    }
 
   $$stack[0]                                                                    # The resulting parse tree
