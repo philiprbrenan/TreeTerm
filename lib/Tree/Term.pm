@@ -2230,7 +2230,7 @@ if (1) {                                                                        
   for my $a(sort keys %N) {
     next if $a eq 't'         or  $b eq 't' ;
     ok !$follows{$b}{$a} || index($N{$a}, $b)  > -1;
-    ok  $follows{$b}{$a} || index($N{$a}, $b) == -1, "$a $b";
+    ok  $follows{$b}{$a} || index($N{$a}, $b) == -1;
     next if $a =~ m([adp])    and $b eq 'B' ;                                   # The first cannot be followed by the second
     next if $a =~ m([abdps])  and $b eq 'a' ;
     next if $a =~ m([Bqv])    and $b eq 'b' ;
