@@ -22,7 +22,9 @@ my $stack      = undef;                                                         
 my $expression = undef;                                                         # Expression being parsed
 my $position   = undef;                                                         # Position in expression
 my %tested;                                                                     # Pairs of lexical items (b, a) such that 'b' is observed to follow 'a' in a test.
-my %follows;                                                                    # Pairs of lexical items (b, a) such that 'b' is observed to follow 'a' in a test without causing a syntax error.
+our %follows;                                                                   # Pairs of lexical items (b, a) such that 'b' is observed to follow 'a' in a test without causing a syntax error.
+our %first;                                                                     # Lexical elements that can come first
+our %last;                                                                      # Lexical elements that can come last
 
 sub new($)                                                                      #P Create a new term from the indicated number of items on top of the stack
  {my ($count) = @_;                                                             # Number of terms
@@ -395,6 +397,9 @@ END
    {my $E = expected $$expression[-1];
     die "Incomplete expression. $E.\n";
    }
+
+  $first{type $$expression[ 0]}++;                                              # Capture valid first and last lexical elements
+  $last {type $$expression[-1]}++;
 
   $$stack[0]                                                                    # The resulting parse tree
  } # parseExpression
@@ -2218,23 +2223,26 @@ bless({
   last  => "Bqsv",
 }, "Tree::Term::LexicalStructure");
 
-for my $b(sort keys $LexicalCodes->%*) {                                        # Prove $LexicalCodes
-for my $a(sort keys $LexicalCodes->%*) {
-  next if $a eq 't'         or  $b eq 't' ;
-  ok !$follows{$b}{$a} || index($$LexicalCodes{$a}->next, $b)  > -1;
-  ok  $follows{$b}{$a} || index($$LexicalCodes{$a}->next, $b) == -1, "$a $b";
-  next if $a =~ m([adp])    and $b eq 'B' ;                                     # The first cannot be followed by the second
-  next if $a =~ m([abdps])  and $b eq 'a' ;
-  next if $a =~ m([Bqv])    and $b eq 'b' ;
-  next if $a =~ m([abpsd])  and $b eq 'd' ;
-  next if $a =~ m([aBqv])   and $b eq 'p' ;
-  next if $a =~ m([abdps])  and $b eq 'q' ;
-  next if $a =~ m([adp])    and $b eq 's' ;
-  next if $a =~ m([aBdpqv]) and $b eq 'v' ;
-  next if $follows{$b}{$a};
-  confess sprintf("Failed to observe %20s before: %20s\n", $a, $b);             # An unobserved combination
-}}
-
+if (1) {                                                                        # Prove $LexicalCodes
+  my %C = LexicalStructure->codes->%*;
+  my %N = map {$_ => $C{$_}->next} keys %C;
+  for my $b(sort keys %N) {
+  for my $a(sort keys %N) {
+    next if $a eq 't'         or  $b eq 't' ;
+    ok !$follows{$b}{$a} || index($N{$a}, $b)  > -1;
+    ok  $follows{$b}{$a} || index($N{$a}, $b) == -1, "$a $b";
+    next if $a =~ m([adp])    and $b eq 'B' ;                                   # The first cannot be followed by the second
+    next if $a =~ m([abdps])  and $b eq 'a' ;
+    next if $a =~ m([Bqv])    and $b eq 'b' ;
+    next if $a =~ m([abpsd])  and $b eq 'd' ;
+    next if $a =~ m([aBqv])   and $b eq 'p' ;
+    next if $a =~ m([abdps])  and $b eq 'q' ;
+    next if $a =~ m([adp])    and $b eq 's' ;
+    next if $a =~ m([aBdpqv]) and $b eq 'v' ;
+    next if $follows{$b}{$a};
+    confess sprintf("Failed to observe %20s before: %20s\n", $a, $b);           # An unobserved combination
+  }}
+ }
 if (0) {                                                                        # Print table of allowed and disallowed combinations
   my @l = grep {!m/t/} sort keys $LexicalCodes->%*;
   my @t = [' ', @l];
