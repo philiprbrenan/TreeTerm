@@ -9,7 +9,7 @@
 # Produced the can follow table without reference to 'term'
 package Tree::Term;
 use v5.26;
-our $VERSION = 20210723;                                                        # Version
+our $VERSION = 20210724;                                                        # Version
 use warnings FATAL => qw(all);
 use strict;
 use Carp qw(confess cluck);
@@ -311,7 +311,7 @@ sub accept_d()                                                                  
  }
 
 sub accept_p()                                                                  #P Prefix
- {check_abdps;                                                                  # WAS bdp
+ {check_abdps;
   pushElement;
  }
 
@@ -554,7 +554,7 @@ END
 Create a parse tree from an array of terms representing an expression.
 
 
-Version 20210723.
+Version 20210724.
 
 
 The following sections describe the methods in each functional area of this
@@ -702,6 +702,83 @@ B<Example:>
    v1
   END
 
+  ok T [qw(v1 s)], <<END;
+   v1
+  END
+
+  ok T [qw(v1 s s)], <<END;
+      s
+   v1   empty2
+  END
+
+  ok T [qw(v1 s b s B)], <<END;
+      s
+   v1   empty2
+  END
+
+  ok T [qw(v1 s b b s s B B)], <<END;
+      s
+   v1          s
+        empty2   empty2
+  END
+
+  ok T [qw(b v1 s B s s)], <<END;
+      s
+   v1   empty2
+  END
+
+  ok T [qw(v1 a b1 b2 v2 B2 B1 s)], <<END;
+      a
+   v1   v2
+  END
+
+  ok T [qw(v1 a1 b1 v2 a2 b2 v3 B2 B1 s)], <<END;
+      a1
+   v1       a2
+         v2    v3
+  END
+
+  ok T [qw(v1 a1 p1 v2)], <<END;
+      a1
+   v1    p1
+         v2
+  END
+
+  ok T [qw(b1 v1 q1 q2 B1)], <<END;
+   q2
+   q1
+   v1
+  END
+
+  ok T [qw(b1 v1 q1 q2 s B1)], <<END;
+   q2
+   q1
+   v1
+  END
+
+  ok T [qw(p1 b1 v1 B1 q1)], <<END;
+   q1
+   p1
+   v1
+  END
+
+  ok T [qw(b1 v1 B1 a1 v2)], <<END;
+      a1
+   v1    v2
+  END
+
+  ok T [qw(v1 q1 a1 v2)], <<END;
+      a1
+   q1    v2
+   v1
+  END
+
+  ok T [qw(s1 p1 v1)], <<END;
+          s1
+   empty3    p1
+             v1
+  END
+
   ok E <<END;
   a
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
@@ -758,14 +835,26 @@ B<Example:>
 
   ok E <<END;
   v1 d1 d2 v2
-  Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
-  Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
+  Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+  Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
   END
 
   ok E <<END;
   v1 p1
   Unexpected 'prefix operator': p1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected 'prefix operator': p1 following 'variable': v1 at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+  END
+
+  ok E <<END;
+  b1 B1 v1
+  Unexpected 'variable': v1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+  Unexpected 'variable': v1 following 'closing parenthesis': B1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+  END
+
+  ok E <<END;
+  b1 B1 p1 v1
+  Unexpected 'prefix operator': p1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+  Unexpected 'prefix operator': p1 following 'closing parenthesis': B1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
 
   if (1)
@@ -988,6 +1077,83 @@ B<Example:>
    v1
   END
 
+  ok T [qw(v1 s)], <<END;
+   v1
+  END
+
+  ok T [qw(v1 s s)], <<END;
+      s
+   v1   empty2
+  END
+
+  ok T [qw(v1 s b s B)], <<END;
+      s
+   v1   empty2
+  END
+
+  ok T [qw(v1 s b b s s B B)], <<END;
+      s
+   v1          s
+        empty2   empty2
+  END
+
+  ok T [qw(b v1 s B s s)], <<END;
+      s
+   v1   empty2
+  END
+
+  ok T [qw(v1 a b1 b2 v2 B2 B1 s)], <<END;
+      a
+   v1   v2
+  END
+
+  ok T [qw(v1 a1 b1 v2 a2 b2 v3 B2 B1 s)], <<END;
+      a1
+   v1       a2
+         v2    v3
+  END
+
+  ok T [qw(v1 a1 p1 v2)], <<END;
+      a1
+   v1    p1
+         v2
+  END
+
+  ok T [qw(b1 v1 q1 q2 B1)], <<END;
+   q2
+   q1
+   v1
+  END
+
+  ok T [qw(b1 v1 q1 q2 s B1)], <<END;
+   q2
+   q1
+   v1
+  END
+
+  ok T [qw(p1 b1 v1 B1 q1)], <<END;
+   q1
+   p1
+   v1
+  END
+
+  ok T [qw(b1 v1 B1 a1 v2)], <<END;
+      a1
+   v1    v2
+  END
+
+  ok T [qw(v1 q1 a1 v2)], <<END;
+      a1
+   q1    v2
+   v1
+  END
+
+  ok T [qw(s1 p1 v1)], <<END;
+          s1
+   empty3    p1
+             v1
+  END
+
   ok E <<END;
   a
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
@@ -1044,14 +1210,26 @@ B<Example:>
 
   ok E <<END;
   v1 d1 d2 v2
-  Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
-  Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
+  Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+  Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
   END
 
   ok E <<END;
   v1 p1
   Unexpected 'prefix operator': p1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected 'prefix operator': p1 following 'variable': v1 at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+  END
+
+  ok E <<END;
+  b1 B1 v1
+  Unexpected 'variable': v1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+  Unexpected 'variable': v1 following 'closing parenthesis': B1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+  END
+
+  ok E <<END;
+  b1 B1 p1 v1
+  Unexpected 'prefix operator': p1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+  Unexpected 'prefix operator': p1 following 'closing parenthesis': B1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
 
   if (1)
@@ -1272,6 +1450,11 @@ Check that we have a semi-colon
 Convert the longest possible expression on top of the stack into a term
 
 
+=head2 pushElement()
+
+Push an element
+
+
 =head2 accept_a()
 
 Assign
@@ -1375,17 +1558,19 @@ List the terms in an expression in post order
 
 20 L<parseExpression|/parseExpression> - Parse an expression.
 
-21 L<reduce|/reduce> - Convert the longest possible expression on top of the stack into a term
+21 L<pushElement|/pushElement> - Push an element
 
-22 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
+22 L<reduce|/reduce> - Convert the longest possible expression on top of the stack into a term
 
-23 L<test_t|/test_t> - Check that we have a semi-colon
+23 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
 
-24 L<test_XXXX|/test_XXXX> - Check that we have XXXX
+24 L<test_t|/test_t> - Check that we have a semi-colon
 
-25 L<type|/type> - Type of term
+25 L<test_XXXX|/test_XXXX> - Check that we have XXXX
 
-26 L<unexpected|/unexpected> - Complain about an unexpected element
+26 L<type|/type> - Type of term
+
+27 L<unexpected|/unexpected> - Complain about an unexpected element
 
 =head1 Installation
 
@@ -1428,7 +1613,7 @@ test unless caller;
 
 1;
 # podDocumentation
-#__DATA__
+__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
