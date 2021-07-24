@@ -1618,7 +1618,7 @@ test unless caller;
 
 1;
 # podDocumentation
-__DATA__
+#__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
@@ -1629,7 +1629,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux|darwin)i)                                                # Supported systems
- {plan tests => 215
+ {plan tests => 217
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -2222,6 +2222,9 @@ bless({
   first => "bpsv",
   last  => "Bqsv",
 }, "Tree::Term::LexicalStructure");
+
+is_deeply LexicalStructure->first, join '', sort keys %first;                   # Prove first and last
+is_deeply LexicalStructure->last,  join '', sort keys %last;
 
 if (1) {                                                                        # Prove $LexicalCodes
   my %C = LexicalStructure->codes->%*;
