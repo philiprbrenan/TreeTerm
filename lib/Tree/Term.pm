@@ -421,6 +421,18 @@ sub parse(@)                                                                    
   $e                                                                            # Otherwise return the parse tree
  } # parse
 
+#D1 Validate                                                                    # Validating is the same as parsing except we do not start at the beginning, instead we start at any lexical element and proceed a few steps from there.
+
+sub validPair($$)                                                               # Confirm that the specified pair of lexical elements can occur as a sequence.
+ {my ($A, $B) = @_;                                                             # First element, second element
+  my $a = type $A;
+  my $b = type $B;
+  if (my $l = $$LexicalCodes{$a})
+   {return 1 if (index $l->next, $b) > -1;
+   }
+  undef
+ }
+
 #D1 Print                                                                       # Print a parse tree to make it easy to visualize its structure.
 
 sub depth($)                                                                    #P Depth of a term in an expression.
@@ -1629,7 +1641,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux|darwin)i)                                                # Supported systems
- {plan tests => 217
+ {plan tests => 221
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -2205,6 +2217,13 @@ v1 b1
 Unexpected 'opening parenthesis': b1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
 No closing parenthesis matching b1 at position 2.
 END
+
+if (1) {                                                                        #TvalidPair
+  ok  validPair('B', 'd');
+  ok  validPair('b', 'B');
+  ok  validPair('v', 'a');
+  ok !validPair('v', 'v');
+ }
 
 is_deeply LexicalStructure,                                                     #TLexicalStructure
 bless({
