@@ -21,7 +21,7 @@ use feature qw(say state current_sub);
 my $stack      = undef;                                                         # Stack of lexical items
 my $expression = undef;                                                         # Expression being parsed
 my $position   = undef;                                                         # Position in expression
-my %tested;                                                                     # Pairs of lexical items (b, a) such that 'b' is observed to follow 'a' in a test.
+our %tested;                                                                    # Pairs of lexical items (b, a) such that 'b' is observed to follow 'a' in a test.
 our %follows;                                                                   # Pairs of lexical items (b, a) such that 'b' is observed to follow 'a' in a test without causing a syntax error.
 our %first;                                                                     # Lexical elements that can come first
 our %last;                                                                      # Lexical elements that can come last
