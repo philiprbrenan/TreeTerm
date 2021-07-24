@@ -1696,6 +1696,83 @@ ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
  v1
 END
 
+ok T [qw(v1 s)], <<END;
+ v1
+END
+
+ok T [qw(v1 s s)], <<END;
+    s
+ v1   empty2
+END
+
+ok T [qw(v1 s b s B)], <<END;
+    s
+ v1   empty2
+END
+
+ok T [qw(v1 s b b s s B B)], <<END;
+    s
+ v1          s
+      empty2   empty2
+END
+
+ok T [qw(b v1 s B s s)], <<END;
+    s
+ v1   empty2
+END
+
+ok T [qw(v1 a b1 b2 v2 B2 B1 s)], <<END;
+    a
+ v1   v2
+END
+
+ok T [qw(v1 a1 b1 v2 a2 b2 v3 B2 B1 s)], <<END;
+    a1
+ v1       a2
+       v2    v3
+END
+
+ok T [qw(v1 a1 p1 v2)], <<END;
+    a1
+ v1    p1
+       v2
+END
+
+ok T [qw(b1 v1 q1 q2 B1)], <<END;
+ q2
+ q1
+ v1
+END
+
+ok T [qw(b1 v1 q1 q2 s B1)], <<END;
+ q2
+ q1
+ v1
+END
+
+ok T [qw(p1 b1 v1 B1 q1)], <<END;
+ q1
+ p1
+ v1
+END
+
+ok T [qw(b1 v1 B1 a1 v2)], <<END;
+    a1
+ v1    v2
+END
+
+ok T [qw(v1 q1 a1 v2)], <<END;
+    a1
+ q1    v2
+ v1
+END
+
+ok T [qw(s1 p1 v1)], <<END;
+        s1
+ empty3    p1
+           v1
+END
+
 ok E <<END;
 a
 Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
@@ -1782,83 +1859,6 @@ Expected: 'assignment operator', 'closing parenthesis',
 'dyadic operator', 'semi-colon' or 'suffix operator'.
 END
  }
-
-ok T [qw(v1 s)], <<END;
- v1
-END
-
-ok T [qw(v1 s s)], <<END;
-    s
- v1   empty2
-END
-
-ok T [qw(v1 s b s B)], <<END;
-    s
- v1   empty2
-END
-
-ok T [qw(v1 s b b s s B B)], <<END;
-    s
- v1          s
-      empty2   empty2
-END
-
-ok T [qw(b v1 s B s s)], <<END;
-    s
- v1   empty2
-END
-
-ok T [qw(v1 a b1 b2 v2 B2 B1 s)], <<END;
-    a
- v1   v2
-END
-
-ok T [qw(v1 a1 b1 v2 a2 b2 v3 B2 B1 s)], <<END;
-    a1
- v1       a2
-       v2    v3
-END
-
-ok T [qw(v1 a1 p1 v2)], <<END;
-    a1
- v1    p1
-       v2
-END
-
-ok T [qw(b1 v1 q1 q2 B1)], <<END;
- q2
- q1
- v1
-END
-
-ok T [qw(b1 v1 q1 q2 s B1)], <<END;
- q2
- q1
- v1
-END
-
-ok T [qw(p1 b1 v1 B1 q1)], <<END;
- q1
- p1
- v1
-END
-
-ok T [qw(b1 v1 B1 a1 v2)], <<END;
-    a1
- v1    v2
-END
-
-ok T [qw(v1 q1 a1 v2)], <<END;
-    a1
- q1    v2
- v1
-END
-
-ok T [qw(s1 p1 v1)], <<END;
-        s1
- empty3    p1
-           v1
-END
 
 ok E <<END;
 v1 q1 v2
