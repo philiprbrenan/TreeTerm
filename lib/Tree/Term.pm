@@ -4,6 +4,9 @@
 # Philip R Brenan at appaapps dot com, Appa Apps Ltd Inc., 2021
 #-------------------------------------------------------------------------------
 # podDocumentation
+# Prove lexical codes, first, last
+# Check we have tests for all possible pairs of lexical items and are erthe getting an error message or acceptance
+# Produced the can follow table without reference to 'term'
 package Tree::Term;
 use v5.26;
 our $VERSION = 20210723;                                                        # Version
@@ -18,6 +21,8 @@ use feature qw(say state current_sub);
 my $stack      = undef;                                                         # Stack of lexical items
 my $expression = undef;                                                         # Expression being parsed
 my $position   = undef;                                                         # Position in expression
+my %tested;                                                                     # Pairs of lexical items (b, a) such that 'b' is observed to follow 'a' in a test.
+my %follows;                                                                    # Pairs of lexical items (b, a) such that 'b' is observed to follow 'a' in a test without causing a syntax error.
 
 sub new($)                                                                      #P Create a new term from the indicated number of items on top of the stack
  {my ($count) = @_;                                                             # Number of terms
@@ -39,8 +44,8 @@ sub LexicalCode($$$)                                                            
  {my ($letter, $next, $name) = @_;                                              # Letter used to refer to the lexical item, letters of items that can follow this lexical item, descriptive name of lexical item
   genHash(q(Tree::Term::LexicalCode),                                           # Lexical item codes.
     letter => $letter,                                                          # Letter code used to refer to the lexical item.
-    next  => $next,                                                             # Letters codes of items that can follow this lexical item.
-    name  => $name,                                                             # Descriptive name of lexical item.
+    next   => $next,                                                            # Letters codes of items that can follow this lexical item.
+    name   => $name,                                                            # Descriptive name of lexical item.
    );
  }
 
@@ -48,7 +53,7 @@ my $LexicalCodes = genHash(q(Tree::Term::Codes),                                
   a => LexicalCode('a', 'bpv',   'assignment operator'),                        # Infix operator with priority 2 binding right to left typically used in an assignment.
   b => LexicalCode('b', 'bBpsv', 'opening parenthesis'),                        # Opening parenthesis.
   B => LexicalCode('B', 'aBdqs', 'closing parenthesis'),                        # Closing parenthesis.
-  d => LexicalCode('d', 'abpv',  'dyadic operator'),                            # Infix operator with priority 3 binding left to right typically used in arithmetic.
+  d => LexicalCode('d', 'bpv',   'dyadic operator'),                            # Infix operator with priority 3 binding left to right typically used in arithmetic.
   p => LexicalCode('p', 'bpv',   'prefix operator'),                            # Monadic prefix operator.
   q => LexicalCode('q', 'aBdqs', 'suffix operator'),                            # Monadic suffix operator.
   s => LexicalCode('s', 'bBpsv', 'semi-colon'),                                 # Infix operator with priority 1 binding left to right typically used to separate statements.
@@ -189,11 +194,15 @@ END
    }
  }
 
-BEGIN                                                                           # Generate recognizers
+BEGIN                                                                           # Generate recognition routines.
  {for my $t(qw(t bdp bdps bst abdps))
    {my $c = <<'END';
 sub check_XXXX()                                                                #P Check that the top of the stack has one of XXXX
- {return 1 if index("XXXX", type($$stack[-1])) > -1;                            # Check type allowed
+ {$tested   {type $$expression[$position]}{type $$expression[$position-1]}++;   # Check that one lexical item has been seen to follow after another
+  if (index("XXXX", type($$stack[-1])) > -1)                                    # Check type allowed
+   {$follows{type $$expression[$position]}{type $$expression[$position-1]}++;   # Shows that one lexical item can possibly follow after another in some circumstances
+    return 1;                                                                   # Type allowed
+   }
   unexpected $$stack[-1], $$expression[$position], $position;                   # Complain about an unexpected type
  }
 END
@@ -274,38 +283,43 @@ sub reduce()                                                                    
   0                                                                             # No move made
  }
 
+sub pushElement()                                                               #P Push an element
+ {push @$stack, $$expression[$position];
+ }
+
 sub accept_a()                                                                  #P Assign
  {check_t;
-  push @$stack, $$expression[$position];
+  pushElement;
  }
 
 sub accept_b()                                                                  #P Open
  {check_abdps;
-  push @$stack, $$expression[$position];
+  pushElement;
  }
 
 sub accept_B()                                                                  #P Closing parenthesis
  {check_bst;
   1 while reduce;
-  push @$stack, $$expression[$position];
+  pushElement;
   1 while reduce;
   check_bst;
  }
 
 sub accept_d()                                                                  #P Infix but not assign or semi-colon
  {check_t;
-  push @$stack, $$expression[$position];
+  pushElement;
  }
 
 sub accept_p()                                                                  #P Prefix
- {check_bdp;
-  push @$stack, $$expression[$position];
+ {check_abdps;                                                                  # WAS bdp
+  pushElement;
  }
 
 sub accept_q()                                                                  #P Post fix
  {check_t;
   my $p = pop @$stack;
-  push @$stack, $$expression[$position], $p;
+  pushElement;
+  push @$stack, $p;
   new 2;
  }
 
@@ -316,14 +330,13 @@ sub accept_s()                                                                  
     new 1;
    }
   1 while reduce;
-  push @$stack, $$expression[$position];
+  pushElement;
  }
 
 sub accept_v()                                                                  #P Variable
  {check_abdps;
-  push @$stack, $$expression[$position];
+  pushElement;
   new 1;
-
   new 2 while @$stack >= 2 and test_p($$stack[-2]);                             # Check for preceding prefix operators
  }
                                                                                 # Action on each lexical item
@@ -561,10 +574,10 @@ Return the lexical codes and their relationships in a data structure so this inf
 B<Example:>
 
 
-  
+
   is_deeply LexicalStructure,                                                       # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
-  
+
 
 =head2 syntaxError(@expression)
 
@@ -576,8 +589,8 @@ Check the syntax of an expression without parsing it. Die with a helpful message
 B<Example:>
 
 
-  if (1)                                                                          
-  
+  if (1)
+
    {eval {syntaxError(qw(v1 p1))};  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
     ok -1 < index $@, <<END =~ s({a}) ( )gsr;
@@ -586,7 +599,7 @@ B<Example:>
   'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
    }
-  
+
 
 =head2 parse(@expression)
 
@@ -598,10 +611,10 @@ Parse an expression.
 B<Example:>
 
 
-  
+
    my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
-  
-  
+
+
    is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
       d3
@@ -612,18 +625,18 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-  
+
   }
-  
+
   ok T [qw(b b v1 B s B s)], <<END;
    v1
   END
-  
+
   ok T [qw(v1 q1 s)], <<END;
    q1
    v1
   END
-  
+
   ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
    q6
    q5
@@ -633,20 +646,20 @@ B<Example:>
    q1
    v1
   END
-  
+
   ok T [qw(p1 p2 b v1 B)], <<END;
    p1
    p2
    v1
   END
-  
+
   ok T [qw(v1 d1 p1 p2 v2)], <<END;
       d1
    v1    p1
          p2
          v2
   END
-  
+
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -661,7 +674,7 @@ B<Example:>
    p6    q1
    v1    v2
   END
-  
+
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 a1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -676,93 +689,93 @@ B<Example:>
    p6    q1
    v1    v2
   END
-  
+
   ok T [qw(b v1 B d1 b v2 B)], <<END;
       d1
    v1    v2
   END
-  
+
   ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
       d1
    q2    v2
    q1
    v1
   END
-  
+
   ok E <<END;
   a
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
   END
-  
+
   ok E <<END;
   B
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'closing parenthesis': B.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'closing parenthesis': B.
   END
-  
+
   ok E <<END;
   d1
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'dyadic operator': d1.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'dyadic operator': d1.
   END
-  
+
   ok E <<END;
   p1
   Expected: 'opening parenthesis', 'prefix operator' or 'variable' after final 'prefix operator': p1.
   Expected: 'opening parenthesis', 'prefix operator' or 'variable' after final 'prefix operator': p1.
   END
-  
+
   ok E <<END;
   q1
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'suffix operator': q1.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'suffix operator': q1.
   END
-  
+
   ok E <<END;
   s
-  
-  
+
+
   END
-  
+
   ok E <<END;
   v1
-  
-  
+
+
   END
-  
+
   ok E <<END;
   b v1
   Incomplete expression. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   No closing parenthesis matching b at position 1.
   END
-  
+
   ok E <<END;
   b v1 B B
   Unexpected 'closing parenthesis': B following 'closing parenthesis': B at position 4. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected closing parenthesis B at position 4. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-  
+
   ok E <<END;
   v1 d1 d2 v2
   Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
   Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
   END
-  
+
   ok E <<END;
   v1 p1
   Unexpected 'prefix operator': p1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected 'prefix operator': p1 following 'variable': v1 at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-  
-  if (1)                                                                          
+
+  if (1)
    {eval {syntaxError(qw(v1 p1))};
     ok -1 < index $@, <<END =~ s({a}) ( )gsr;
   Unexpected 'prefix operator': p1 following 'variable': v1 at position 2.
   Expected: 'assignment operator', 'closing parenthesis',
   'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-  
+
 
 =head1 Print
 
@@ -779,10 +792,10 @@ Print the terms in the expression as a tree from left right to make it easier to
 B<Example:>
 
 
-  
+
    my @e = qw(v1 a2 v3 d4 v5 s6 v8 a9 v10);
-  
-  
+
+
    is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
                   s6
@@ -791,7 +804,7 @@ B<Example:>
          v3    v5
   END
   }
-  
+
   ok T [qw(v1 a2 v3 s s s  v4 a5 v6 s s)], <<END;
                                          s
                               s            empty2
@@ -800,52 +813,52 @@ B<Example:>
       a2      empty2
    v1    v3
   END
-  
+
   ok T [qw(b B)], <<END;
    empty1
   END
-  
+
   ok T [qw(b b B B)], <<END;
    empty1
   END
-  
+
   ok T [qw(b b v1 B B)], <<END;
    v1
   END
-  
+
   ok T [qw(b b v1 a2 v3 B B)], <<END;
       a2
    v1    v3
   END
-  
+
   ok T [qw(b b v1 a2 v3 d4 v5 B B)], <<END;
       a2
    v1       d4
          v3    v5
   END
-  
+
   ok T [qw(p1 v1)], <<END;
    p1
    v1
   END
-  
+
   ok T [qw(p2 p1 v1)], <<END;
    p2
    p1
    v1
   END
-  
+
   ok T [qw(v1 q1)], <<END;
    q1
    v1
   END
-  
+
   ok T [qw(v1 q1 q2)], <<END;
    q2
    q1
    v1
   END
-  
+
   ok T [qw(p2 p1 v1 q1 q2)], <<END;
    q2
    q1
@@ -853,7 +866,7 @@ B<Example:>
    p1
    v1
   END
-  
+
   ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4)], <<END;
       d3
    q2    q4
@@ -862,7 +875,7 @@ B<Example:>
    p1    p3
    v1    v2
   END
-  
+
   ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
       d3
    q2       d4
@@ -872,22 +885,22 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-  
+
   ok T [qw(b s B)], <<END;
    empty2
   END
-  
+
   ok T [qw(b s s B)], <<END;
           s
    empty2   empty2
   END
-  
-  
-  if (1) {                                                                        
-  
+
+
+  if (1) {
+
    my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
-  
-  
+
+
    is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
       d3
@@ -898,18 +911,18 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-  
+
   }
-  
+
   ok T [qw(b b v1 B s B s)], <<END;
    v1
   END
-  
+
   ok T [qw(v1 q1 s)], <<END;
    q1
    v1
   END
-  
+
   ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
    q6
    q5
@@ -919,20 +932,20 @@ B<Example:>
    q1
    v1
   END
-  
+
   ok T [qw(p1 p2 b v1 B)], <<END;
    p1
    p2
    v1
   END
-  
+
   ok T [qw(v1 d1 p1 p2 v2)], <<END;
       d1
    v1    p1
          p2
          v2
   END
-  
+
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -947,7 +960,7 @@ B<Example:>
    p6    q1
    v1    v2
   END
-  
+
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 a1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -962,93 +975,93 @@ B<Example:>
    p6    q1
    v1    v2
   END
-  
+
   ok T [qw(b v1 B d1 b v2 B)], <<END;
       d1
    v1    v2
   END
-  
+
   ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
       d1
    q2    v2
    q1
    v1
   END
-  
+
   ok E <<END;
   a
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
   END
-  
+
   ok E <<END;
   B
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'closing parenthesis': B.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'closing parenthesis': B.
   END
-  
+
   ok E <<END;
   d1
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'dyadic operator': d1.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'dyadic operator': d1.
   END
-  
+
   ok E <<END;
   p1
   Expected: 'opening parenthesis', 'prefix operator' or 'variable' after final 'prefix operator': p1.
   Expected: 'opening parenthesis', 'prefix operator' or 'variable' after final 'prefix operator': p1.
   END
-  
+
   ok E <<END;
   q1
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'suffix operator': q1.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'suffix operator': q1.
   END
-  
+
   ok E <<END;
   s
-  
-  
+
+
   END
-  
+
   ok E <<END;
   v1
-  
-  
+
+
   END
-  
+
   ok E <<END;
   b v1
   Incomplete expression. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   No closing parenthesis matching b at position 1.
   END
-  
+
   ok E <<END;
   b v1 B B
   Unexpected 'closing parenthesis': B following 'closing parenthesis': B at position 4. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected closing parenthesis B at position 4. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-  
+
   ok E <<END;
   v1 d1 d2 v2
   Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
   Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
   END
-  
+
   ok E <<END;
   v1 p1
   Unexpected 'prefix operator': p1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected 'prefix operator': p1 following 'variable': v1 at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-  
-  if (1)                                                                          
+
+  if (1)
    {eval {syntaxError(qw(v1 p1))};
     ok -1 < index $@, <<END =~ s({a}) ( )gsr;
   Unexpected 'prefix operator': p1 following 'variable': v1 at position 2.
   Expected: 'assignment operator', 'closing parenthesis',
   'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-  
+
 
 
 =head1 Hash Definitions
@@ -1415,7 +1428,7 @@ test unless caller;
 
 1;
 # podDocumentation
-__DATA__
+#__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
@@ -1426,7 +1439,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux|darwin)i)                                                # Supported systems
- {plan tests => 52
+ {plan tests => 215
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -1739,14 +1752,26 @@ END
 
 ok E <<END;
 v1 d1 d2 v2
-Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
-Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'assignment operator', 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
 END
 
 ok E <<END;
 v1 p1
 Unexpected 'prefix operator': p1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
 Unexpected 'prefix operator': p1 following 'variable': v1 at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+END
+
+ok E <<END;
+b1 B1 v1
+Unexpected 'variable': v1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+Unexpected 'variable': v1 following 'closing parenthesis': B1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+END
+
+ok E <<END;
+b1 B1 p1 v1
+Unexpected 'prefix operator': p1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+Unexpected 'prefix operator': p1 following 'closing parenthesis': B1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
 END
 
 if (1)                                                                          #TsyntaxError
@@ -1794,13 +1819,210 @@ ok T [qw(v1 a1 b1 v2 a2 b2 v3 B2 B1 s)], <<END;
        v2    v3
 END
 
+ok T [qw(v1 a1 p1 v2)], <<END;
+    a1
+ v1    p1
+       v2
+END
+
+ok T [qw(b1 v1 q1 q2 B1)], <<END;
+ q2
+ q1
+ v1
+END
+
+ok T [qw(b1 v1 q1 q2 s B1)], <<END;
+ q2
+ q1
+ v1
+END
+
+ok T [qw(p1 b1 v1 B1 q1)], <<END;
+ q1
+ p1
+ v1
+END
+
+ok T [qw(b1 v1 B1 a1 v2)], <<END;
+    a1
+ v1    v2
+END
+
+ok T [qw(v1 q1 a1 v2)], <<END;
+    a1
+ q1    v2
+ v1
+END
+
+ok T [qw(s1 p1 v1)], <<END;
+        s1
+ empty3    p1
+           v1
+END
+
+ok E <<END;
+v1 q1 v2
+Unexpected 'variable': v2 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+Unexpected 'variable': v2 following 'suffix operator': q1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+END
+
+ok E <<END;
+b1 v2 a2 B1
+Unexpected 'closing parenthesis': B1 following 'assignment operator': a2 at position 4. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'closing parenthesis': B1 following 'assignment operator': a2 at position 4. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+b1 v2 d2 B1
+Unexpected 'closing parenthesis': B1 following 'dyadic operator': d2 at position 4. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'closing parenthesis': B1 following 'dyadic operator': d2 at position 4. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+b1 p1  B1
+Unexpected 'closing parenthesis': B1 following 'prefix operator': p1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'closing parenthesis': B1 following 'prefix operator': p1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+v1 v2
+Unexpected 'variable': v2 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+Unexpected 'variable': v2 following 'variable': v1 at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+END
+
+ok E <<END;
+b1 B1 b2
+Unexpected 'opening parenthesis': b2 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+No closing parenthesis matching b2 at position 3.
+END
+
+ok E <<END;
+v1 a1 a2
+Unexpected 'assignment operator': a2 following 'assignment operator': a1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'assignment operator': a2 following 'assignment operator': a1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+v1 a1 d2
+Unexpected 'dyadic operator': d2 following 'assignment operator': a1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'dyadic operator': d2 following 'assignment operator': a1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+v1 a1 q1
+Unexpected 'suffix operator': q1 following 'assignment operator': a1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'suffix operator': q1 following 'assignment operator': a1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+v1 a1 s1
+Unexpected 'semi-colon': s1 following 'assignment operator': a1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'semi-colon': s1 following 'assignment operator': a1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+b1 a1
+Unexpected 'assignment operator': a1 following 'opening parenthesis': b1 at position 2. Expected: 'closing parenthesis', 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable'.
+No closing parenthesis matching b1 at position 1.
+END
+
+ok E <<END;
+b1 d1
+Unexpected 'dyadic operator': d1 following 'opening parenthesis': b1 at position 2. Expected: 'closing parenthesis', 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable'.
+No closing parenthesis matching b1 at position 1.
+END
+
+ok E <<END;
+b1 q1
+Unexpected 'suffix operator': q1 following 'opening parenthesis': b1 at position 2. Expected: 'closing parenthesis', 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable'.
+No closing parenthesis matching b1 at position 1.
+END
+
+ok E <<END;
+v1 d1 a1
+Unexpected 'assignment operator': a1 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'assignment operator': a1 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+v1 d1 q1
+Unexpected 'suffix operator': q1 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'suffix operator': q1 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+v1 d1 s1
+Unexpected 'semi-colon': s1 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'semi-colon': s1 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+p1 a1
+Unexpected 'assignment operator': a1 following 'prefix operator': p1 at position 2. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'assignment operator': a1 following 'prefix operator': p1 at position 2. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+p1 d1
+Unexpected 'dyadic operator': d1 following 'prefix operator': p1 at position 2. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'dyadic operator': d1 following 'prefix operator': p1 at position 2. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+p1 q1
+Unexpected 'suffix operator': q1 following 'prefix operator': p1 at position 2. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'suffix operator': q1 following 'prefix operator': p1 at position 2. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+p1 s1
+Unexpected 'semi-colon': s1 following 'prefix operator': p1 at position 2. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+Unexpected 'semi-colon': s1 following 'prefix operator': p1 at position 2. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
+END
+
+ok E <<END;
+v1 q1 b1
+Unexpected 'opening parenthesis': b1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+No closing parenthesis matching b1 at position 3.
+END
+
+ok E <<END;
+v1 q1 p1
+Unexpected 'prefix operator': p1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+Unexpected 'prefix operator': p1 following 'suffix operator': q1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+END
+
+ok E <<END;
+s1 a1
+Unexpected 'assignment operator': a1 following 'semi-colon': s1 at position 2. Expected: 'closing parenthesis', 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable'.
+Unexpected 'assignment operator': a1 following 'semi-colon': s1 at position 2. Expected: 'closing parenthesis', 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable'.
+END
+
+ok E <<END;
+s1 d1
+Unexpected 'dyadic operator': d1 following 'semi-colon': s1 at position 2. Expected: 'closing parenthesis', 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable'.
+Unexpected 'dyadic operator': d1 following 'semi-colon': s1 at position 2. Expected: 'closing parenthesis', 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable'.
+END
+
+ok E <<END;
+s1 q1
+Unexpected 'suffix operator': q1 following 'semi-colon': s1 at position 2. Expected: 'closing parenthesis', 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable'.
+Unexpected 'suffix operator': q1 following 'semi-colon': s1 at position 2. Expected: 'closing parenthesis', 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable'.
+END
+
+ok E <<END;
+v1 b1
+Unexpected 'opening parenthesis': b1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
+No closing parenthesis matching b1 at position 2.
+END
+
 is_deeply LexicalStructure,                                                     #TLexicalStructure
 bless({
   codes => bless({
              a => bless({ letter => "a", name => "assignment operator", next => "bpv" },   "Tree::Term::LexicalCode"),
              b => bless({ letter => "b", name => "opening parenthesis", next => "bBpsv" }, "Tree::Term::LexicalCode"),
              B => bless({ letter => "B", name => "closing parenthesis", next => "aBdqs" }, "Tree::Term::LexicalCode"),
-             d => bless({ letter => "d", name => "dyadic operator",     next => "abpv" },  "Tree::Term::LexicalCode"),
+             d => bless({ letter => "d", name => "dyadic operator",     next => "bpv" },   "Tree::Term::LexicalCode"),
              p => bless({ letter => "p", name => "prefix operator",     next => "bpv" },   "Tree::Term::LexicalCode"),
              q => bless({ letter => "q", name => "suffix operator",     next => "aBdqs" }, "Tree::Term::LexicalCode"),
              s => bless({ letter => "s", name => "semi-colon",          next => "bBpsv" }, "Tree::Term::LexicalCode"),
@@ -1810,5 +2032,36 @@ bless({
   first => "bpsv",
   last  => "Bqsv",
 }, "Tree::Term::LexicalStructure");
+
+for my $b(sort keys $LexicalCodes->%*) {                                        # Prove $LexicalCodes
+for my $a(sort keys $LexicalCodes->%*) {
+  next if $a eq 't'         or  $b eq 't' ;
+  ok !$follows{$b}{$a} || index($$LexicalCodes{$a}->next, $b)  > -1;
+  ok  $follows{$b}{$a} || index($$LexicalCodes{$a}->next, $b) == -1, "$a $b";
+  next if $a =~ m([adp])    and $b eq 'B' ;                                     # The first cannot be followed by the second
+  next if $a =~ m([abdps])  and $b eq 'a' ;
+  next if $a =~ m([Bqv])    and $b eq 'b' ;
+  next if $a =~ m([abpsd])  and $b eq 'd' ;
+  next if $a =~ m([aBqv])   and $b eq 'p' ;
+  next if $a =~ m([abdps])  and $b eq 'q' ;
+  next if $a =~ m([adp])    and $b eq 's' ;
+  next if $a =~ m([aBdpqv]) and $b eq 'v' ;
+  next if $follows{$b}{$a};
+  confess sprintf("Failed to observe %20s before: %20s\n", $a, $b);             # An unobserved combination
+}}
+
+if (0) {                                                                        # Print table of allowed and disallowed combinations
+  my @l = grep {!m/t/} sort keys $LexicalCodes->%*;
+  my @t = [' ', @l];
+  for my $b(@l)
+   {my @r;
+    for my $a(@l)
+     {push @r, $follows{$a}{$b} ? 'X' : $tested{$a}{$b} ? '-' : ' ';
+     }
+    push @t, [$b, @r];
+   }
+  say STDERR "Column can follow row";
+  say STDERR formatTableBasic(\@t);
+ }
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
