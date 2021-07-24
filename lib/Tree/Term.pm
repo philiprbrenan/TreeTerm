@@ -2242,19 +2242,20 @@ if (1) {                                                                        
     next if $follows{$b}{$a};
     confess sprintf("Failed to observe %20s before: %20s\n", $a, $b);           # An unobserved combination
   }}
- }
-if (0) {                                                                        # Print table of allowed and disallowed combinations
-  my @l = grep {!m/t/} sort keys $LexicalCodes->%*;
-  my @t = [' ', @l];
-  for my $b(@l)
-   {my @r;
-    for my $a(@l)
-     {push @r, $follows{$a}{$b} ? 'X' : $tested{$a}{$b} ? '-' : ' ';
+
+  if (0) {                                                                      # Print table of allowed and disallowed combinations
+    my @l = grep {!m/t/} sort keys %N;
+    my @t = [' ', @l];
+    for my $b(@l)
+     {my @r;
+      for my $a(@l)
+       {push @r, $follows{$a}{$b} ? 'X' : $tested{$a}{$b} ? '-' : ' ';
+       }
+      push @t, [$b, @r];
      }
-    push @t, [$b, @r];
+    say STDERR "Column can follow row";
+    say STDERR formatTableBasic(\@t);
    }
-  say STDERR "Column can follow row";
-  say STDERR formatTableBasic(\@t);
  }
 
 lll "Finished in", sprintf("%7.4f", time - $startTime), "seconds";
