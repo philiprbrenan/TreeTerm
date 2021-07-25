@@ -229,15 +229,16 @@ sub test_t($)                                                                   
   ref $item
  }
 
-sub reduce1()                                                                   #P Reduce the stack at priority 1
- {#lll "Reduce 1 ", scalar(@s), "\n", dump([@s]);
+sub reduce($)                                                                   #P Reduce the stack at the specified priority
+ {my ($priority) = @_;                                                          # Priority
+  #lll "Reduce at $priority: ", scalar(@s), "\n", dump([@s]);
 
   if (@$stack >= 3)                                                             # term infix-operator term
    {my ($l, $d, $r) = ($$stack[-3], $$stack[-2], $$stack[-1]);                  # Left infix right
 
     if     (test_t($l))                                                         # Parse out infix operator expression
      {if   (test_t($r))
-       {if (test_ads($d))
+       {if ($priority == 1 ? test_ads($d) :  test_d($d))                        # Amount of reduction
          {pop  @$stack for 1..3;
           push @$stack, $d, $l, $r;
           new 3;
@@ -285,25 +286,12 @@ sub reduce1()                                                                   
   0                                                                             # No move made
  }
 
+sub reduce1()                                                                   #P Reduce the stack at priority 1
+ {reduce 1;
+ }
+
 sub reduce2()                                                                   #P Reduce the stack at priority 2
- {#lll "Reduce 2 ", scalar(@s), "\n", dump([@s]);
-
-  if (@$stack >= 3)                                                             # term infix term
-   {my ($l, $d, $r) = ($$stack[-3], $$stack[-2], $$stack[-1]);                  # Left infix right
-
-    if     (test_t($l))                                                         # Parse out infix operator expression
-     {if   (test_t($r))
-       {if (test_d($d))
-         {pop  @$stack for 1..3;
-          push @$stack, $d, $l, $r;
-          new 3;
-          return 1;
-         }
-       }
-     }
-   }
-
-  0                                                                             # No move made
+ {reduce 2;
  }
 
 sub pushElement()                                                               #P Push an element
