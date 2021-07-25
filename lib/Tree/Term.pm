@@ -197,7 +197,7 @@ END
  }
 
 BEGIN                                                                           # Generate recognition routines.
- {for my $t(qw(t bdp bdps bst abdps))
+ {for my $t(qw(abdps bst t))
    {my $c = <<'END';
 sub check_XXXX()                                                                #P Check that the top of the stack has one of XXXX
  {$tested   {type $$expression[$position]}{type $$expression[$position-1]}++;   # Check that one lexical item has been seen to follow after another
@@ -212,7 +212,7 @@ END
     eval $c; $@ and confess "$@\n";
    }
 
-  for my $t(qw(abdps ads b B bdp bdps bpsv bst p pbsv s sbt v))                 # Test various sets of items
+  for my $t(qw(ads b B bpsv bst d p s v))                                       # Test various sets of items
    {my $c = <<'END';
 sub test_XXXX($)                                                                #P Check that we have XXXX
  {my ($item) = @_;                                                              # Item to test
@@ -229,10 +229,10 @@ sub test_t($)                                                                   
   ref $item
  }
 
-sub reduce()                                                                    #P Convert the longest possible expression on top of the stack into a term
- {#lll "TTTT ", scalar(@s), "\n", dump([@s]);
+sub reduce1()                                                                   #P Reduce the stack at priority 1
+ {#lll "Reduce 1 ", scalar(@s), "\n", dump([@s]);
 
-  if (@$stack >= 3)                                                             # Go for term infix-operator term
+  if (@$stack >= 3)                                                             # term infix-operator term
    {my ($l, $d, $r) = ($$stack[-3], $$stack[-2], $$stack[-1]);                  # Left infix right
 
     if     (test_t($l))                                                         # Parse out infix operator expression
@@ -285,12 +285,34 @@ sub reduce()                                                                    
   0                                                                             # No move made
  }
 
+sub reduce2()                                                                   #P Reduce the stack at priority 2
+ {#lll "Reduce 2 ", scalar(@s), "\n", dump([@s]);
+
+  if (@$stack >= 3)                                                             # term infix term
+   {my ($l, $d, $r) = ($$stack[-3], $$stack[-2], $$stack[-1]);                  # Left infix right
+
+    if     (test_t($l))                                                         # Parse out infix operator expression
+     {if   (test_t($r))
+       {if (test_d($d))
+         {pop  @$stack for 1..3;
+          push @$stack, $d, $l, $r;
+          new 3;
+          return 1;
+         }
+       }
+     }
+   }
+
+  0                                                                             # No move made
+ }
+
 sub pushElement()                                                               #P Push an element
  {push @$stack, $$expression[$position];
  }
 
 sub accept_a()                                                                  #P Assign
  {check_t;
+  1 while reduce2;
   pushElement;
  }
 
@@ -301,9 +323,9 @@ sub accept_b()                                                                  
 
 sub accept_B()                                                                  #P Closing parenthesis
  {check_bst;
-  1 while reduce;
+  1 while reduce1;
   pushElement;
-  1 while reduce;
+  1 while reduce1;
   check_bst;
  }
 
@@ -331,7 +353,7 @@ sub accept_s()                                                                  
    {push @$stack, 'empty2';
     new 1;
    }
-  1 while reduce;
+  1 while reduce1;
   pushElement;
  }
 
@@ -391,7 +413,7 @@ END
    }
 
   pop @$stack while @$stack > 1 and $$stack[-1] =~ m(s);                        # Remove any trailing semi colons
-  1 while reduce;                                                               # Final reductions
+  1 while reduce1;                                                               # Final reductions
 
   if (@$stack != 1)                                                             # Incomplete expression
    {my $E = expected $$expression[-1];
@@ -1630,7 +1652,7 @@ test unless caller;
 
 1;
 # podDocumentation
-__DATA__
+#__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
@@ -2217,6 +2239,22 @@ v1 b1
 Unexpected 'opening parenthesis': b1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
 No closing parenthesis matching b1 at position 2.
 END
+
+if (0) {
+ok T [qw(v1 d1 v2 athen v3 d2 v4 aelse v5 d3 v6 athen v7 d4 v8 aelse v9 d5 v10)], <<END;
+        s1
+ empty3    p1
+           v1
+END
+
+latest:;
+
+ok T [qw(v1 d1 v2 athen v3 d2 v4)], <<END;
+        s1
+ empty3    p1
+           v1
+END
+}
 
 if (1) {                                                                        #TvalidPair
   ok  validPair('B', 'd');
