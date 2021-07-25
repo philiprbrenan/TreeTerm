@@ -604,10 +604,10 @@ Return the lexical codes and their relationships in a data structure so this inf
 B<Example:>
 
 
-
+  
   is_deeply LexicalStructure,                                                       # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
-
+  
 
 =head2 syntaxError(@expression)
 
@@ -619,8 +619,8 @@ Check the syntax of an expression without parsing it. Die with a helpful message
 B<Example:>
 
 
-  if (1)
-
+  if (1)                                                                          
+  
    {eval {syntaxError(qw(v1 p1))};  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
     ok -1 < index $@, <<END =~ s({a}) ( )gsr;
@@ -629,7 +629,7 @@ B<Example:>
   'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
    }
-
+  
 
 =head2 parse(@expression)
 
@@ -641,24 +641,25 @@ Parse an expression.
 B<Example:>
 
 
-  ok T [qw(vsub ais vindex as v1 d1 v2 athen v3 d2 v4 aelse v5 d3 v6 athen v7 d4 v8 aelse v9 d5 v10)], <<END =~ s(\b(then|else|is)) (a$1)gsr;
-        is
-   vsub            as
-            vindex             then
-                         d1                   else
-                      v1    v2          d2                   then
-                                     v3    v4          d3                   else
-                                                    v5    v6          d4             d5
-                                                                   v7    v8       v9    v10
+  ok T [qw(v_sub a_is v_array as v1 d_== v2 a_then v3 d_plus v4 a_else v5 d_== v6 a_then v7 d_minus v8 a_else v9 d_times b v10 a_+ v11 B)], <<END;
+       is
+   sub          as
+          array             then
+                      ==                    else
+                   v1    v2         plus                  then
+                                 v3      v4         ==                     else
+                                                 v5    v6         minus            times
+                                                               v7       v8      v9           +
+                                                                                         v10   v11
   END
   }
-
-  if (1) {
+  
+  if (1) {                                                                        
     ok  validPair('B', 'd');
     ok  validPair('b', 'B');
     ok  validPair('v', 'a');
     ok !validPair('v', 'v');
-
+  
 
 =head1 Validate
 
@@ -675,19 +676,19 @@ Confirm that the specified pair of lexical elements can occur as a sequence.
 B<Example:>
 
 
-
+  
     ok  validPair('B', 'd');  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
-
+  
     ok  validPair('b', 'B');  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
-
+  
     ok  validPair('v', 'a');  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
-
+  
     ok !validPair('v', 'v');  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
-
+  
 
 =head1 Print
 
@@ -704,10 +705,10 @@ Print the terms in the expression as a tree from left right to make it easier to
 B<Example:>
 
 
-
+  
    my @e = qw(v1 a2 v3 d4 v5 s6 v8 a9 v10);
-
-
+  
+  
    is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
                   s6
@@ -716,7 +717,7 @@ B<Example:>
          v3    v5
   END
   }
-
+  
   ok T [qw(v1 a2 v3 s s s  v4 a5 v6 s s)], <<END;
                                          s
                               s            empty2
@@ -725,52 +726,52 @@ B<Example:>
       a2      empty2
    v1    v3
   END
-
+  
   ok T [qw(b B)], <<END;
    empty1
   END
-
+  
   ok T [qw(b b B B)], <<END;
    empty1
   END
-
+  
   ok T [qw(b b v1 B B)], <<END;
    v1
   END
-
+  
   ok T [qw(b b v1 a2 v3 B B)], <<END;
       a2
    v1    v3
   END
-
+  
   ok T [qw(b b v1 a2 v3 d4 v5 B B)], <<END;
       a2
    v1       d4
          v3    v5
   END
-
+  
   ok T [qw(p1 v1)], <<END;
    p1
    v1
   END
-
+  
   ok T [qw(p2 p1 v1)], <<END;
    p2
    p1
    v1
   END
-
+  
   ok T [qw(v1 q1)], <<END;
    q1
    v1
   END
-
+  
   ok T [qw(v1 q1 q2)], <<END;
    q2
    q1
    v1
   END
-
+  
   ok T [qw(p2 p1 v1 q1 q2)], <<END;
    q2
    q1
@@ -778,7 +779,7 @@ B<Example:>
    p1
    v1
   END
-
+  
   ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4)], <<END;
       d3
    q2    q4
@@ -787,7 +788,7 @@ B<Example:>
    p1    p3
    v1    v2
   END
-
+  
   ok T [qw(p2 p1 v1 q1 q2 d3 p4 p3 v2 q3 q4  d4 p6 p5 v3 q5 q6 s)], <<END;
       d3
    q2       d4
@@ -797,22 +798,22 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-
+  
   ok T [qw(b s B)], <<END;
    empty2
   END
-
+  
   ok T [qw(b s s B)], <<END;
           s
    empty2   empty2
   END
-
-
+  
+  
   if (1) {
-
+  
    my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
-
-
+  
+  
    is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
 
       d3
@@ -823,18 +824,18 @@ B<Example:>
    v1    p3    p5
          v2    v3
   END
-
+  
   }
-
+  
   ok T [qw(b b v1 B s B s)], <<END;
    v1
   END
-
+  
   ok T [qw(v1 q1 s)], <<END;
    q1
    v1
   END
-
+  
   ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
    q6
    q5
@@ -844,20 +845,20 @@ B<Example:>
    q1
    v1
   END
-
+  
   ok T [qw(p1 p2 b v1 B)], <<END;
    p1
    p2
    v1
   END
-
+  
   ok T [qw(v1 d1 p1 p2 v2)], <<END;
       d1
    v1    p1
          p2
          v2
   END
-
+  
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -872,7 +873,7 @@ B<Example:>
    p6    q1
    v1    v2
   END
-
+  
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 a1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
          q6
          q5
@@ -887,182 +888,182 @@ B<Example:>
    p6    q1
    v1    v2
   END
-
+  
   ok T [qw(b v1 B d1 b v2 B)], <<END;
       d1
    v1    v2
   END
-
+  
   ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
       d1
    q2    v2
    q1
    v1
   END
-
+  
   ok T [qw(v1 s)], <<END;
    v1
   END
-
+  
   ok T [qw(v1 s s)], <<END;
       s
    v1   empty2
   END
-
+  
   ok T [qw(v1 s b s B)], <<END;
       s
    v1   empty2
   END
-
+  
   ok T [qw(v1 s b b s s B B)], <<END;
       s
    v1          s
         empty2   empty2
   END
-
+  
   ok T [qw(b v1 s B s s)], <<END;
       s
    v1   empty2
   END
-
+  
   ok T [qw(v1 a b1 b2 v2 B2 B1 s)], <<END;
       a
    v1   v2
   END
-
+  
   ok T [qw(v1 a1 b1 v2 a2 b2 v3 B2 B1 s)], <<END;
       a1
    v1       a2
          v2    v3
   END
-
+  
   ok T [qw(v1 a1 p1 v2)], <<END;
       a1
    v1    p1
          v2
   END
-
+  
   ok T [qw(b1 v1 q1 q2 B1)], <<END;
    q2
    q1
    v1
   END
-
+  
   ok T [qw(b1 v1 q1 q2 s B1)], <<END;
    q2
    q1
    v1
   END
-
+  
   ok T [qw(p1 b1 v1 B1 q1)], <<END;
    q1
    p1
    v1
   END
-
+  
   ok T [qw(b1 v1 B1 a1 v2)], <<END;
       a1
    v1    v2
   END
-
+  
   ok T [qw(v1 q1 a1 v2)], <<END;
       a1
    q1    v2
    v1
   END
-
+  
   ok T [qw(s1 p1 v1)], <<END;
           s1
    empty3    p1
              v1
   END
-
+  
   ok E <<END;
   a
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'assignment operator': a.
   END
-
+  
   ok E <<END;
   B
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'closing parenthesis': B.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'closing parenthesis': B.
   END
-
+  
   ok E <<END;
   d1
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'dyadic operator': d1.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'dyadic operator': d1.
   END
-
+  
   ok E <<END;
   p1
   Expected: 'opening parenthesis', 'prefix operator' or 'variable' after final 'prefix operator': p1.
   Expected: 'opening parenthesis', 'prefix operator' or 'variable' after final 'prefix operator': p1.
   END
-
+  
   ok E <<END;
   q1
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'suffix operator': q1.
   Expression must start with 'opening parenthesis', 'prefix operator', 'semi-colon' or 'variable', not 'suffix operator': q1.
   END
-
+  
   ok E <<END;
   s
-
-
+  
+  
   END
-
+  
   ok E <<END;
   v1
-
-
+  
+  
   END
-
+  
   ok E <<END;
   b v1
   Incomplete expression. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   No closing parenthesis matching b at position 1.
   END
-
+  
   ok E <<END;
   b v1 B B
   Unexpected 'closing parenthesis': B following 'closing parenthesis': B at position 4. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected closing parenthesis B at position 4. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-
+  
   ok E <<END;
   v1 d1 d2 v2
   Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
   Unexpected 'dyadic operator': d2 following 'dyadic operator': d1 at position 3. Expected: 'opening parenthesis', 'prefix operator' or 'variable'.
   END
-
+  
   ok E <<END;
   v1 p1
   Unexpected 'prefix operator': p1 following term ending at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected 'prefix operator': p1 following 'variable': v1 at position 2. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-
+  
   ok E <<END;
   b1 B1 v1
   Unexpected 'variable': v1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected 'variable': v1 following 'closing parenthesis': B1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-
+  
   ok E <<END;
   b1 B1 p1 v1
   Unexpected 'prefix operator': p1 following term ending at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   Unexpected 'prefix operator': p1 following 'closing parenthesis': B1 at position 3. Expected: 'assignment operator', 'closing parenthesis', 'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-
-  if (1)
+  
+  if (1)                                                                          
    {eval {syntaxError(qw(v1 p1))};
     ok -1 < index $@, <<END =~ s({a}) ( )gsr;
   Unexpected 'prefix operator': p1 following 'variable': v1 at position 2.
   Expected: 'assignment operator', 'closing parenthesis',
   'dyadic operator', 'semi-colon' or 'suffix operator'.
   END
-
+  
 
 
 =head1 Hash Definitions
@@ -1263,7 +1264,7 @@ Check that we have XXXX
 
 =head2 test_t($item)
 
-Check that we have a semi-colon
+Check that we have a term
 
      Parameter  Description
   1  $item      Item to test
@@ -1355,9 +1356,9 @@ List the terms in an expression in post order
 
 1 L<accept_a|/accept_a> - Assign
 
-2 L<accept_b|/accept_b> - Open
+2 L<accept_B|/accept_B> - Closing parenthesis
 
-3 L<accept_B|/accept_B> - Closing parenthesis
+3 L<accept_b|/accept_b> - Open
 
 4 L<accept_d|/accept_d> - Infix but not assign or semi-colon
 
@@ -1403,7 +1404,7 @@ List the terms in an expression in post order
 
 25 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
 
-26 L<test_t|/test_t> - Check that we have a semi-colon
+26 L<test_t|/test_t> - Check that we have a term
 
 27 L<test_XXXX|/test_XXXX> - Check that we have XXXX
 
