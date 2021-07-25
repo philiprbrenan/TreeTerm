@@ -1663,7 +1663,7 @@ my $localTest = ((caller(1))[0]//'Tree::Term') eq "Tree::Term";                 
 Test::More->builder->output("/dev/null") if $localTest;                         # Reduce number of confirmation messages during testing
 
 if ($^O =~ m(bsd|linux|darwin)i)                                                # Supported systems
- {plan tests => 221
+ {plan tests => 222
  }
 else
  {plan skip_all =>qq(Not supported on: $^O);
@@ -1830,7 +1830,7 @@ ok T [qw(b s s B)], <<END;
 END
 
 
-if (1) {                                                                        #Tparse
+if (1) {
 
  my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
 
@@ -2240,19 +2240,16 @@ Unexpected 'opening parenthesis': b1 following term ending at position 2. Expect
 No closing parenthesis matching b1 at position 2.
 END
 
-if (0) {
-ok T [qw(v1 d1 v2 athen v3 d2 v4 aelse v5 d3 v6 athen v7 d4 v8 aelse v9 d5 v10)], <<END;
-        s1
- empty3    p1
-           v1
-END
-
-latest:;
-
-ok T [qw(v1 d1 v2 athen v3 d2 v4)], <<END;
-        s1
- empty3    p1
-           v1
+if (1) {                                                                        #Tparse
+ok T [qw(vsub ais vindex as v1 d1 v2 athen v3 d2 v4 aelse v5 d3 v6 athen v7 d4 v8 aelse v9 d5 v10)], <<END =~ s(\b(then|else|is)) (a$1)gsr;
+      is
+ vsub            as
+          vindex             then
+                       d1                   else
+                    v1    v2          d2                   then
+                                   v3    v4          d3                   else
+                                                  v5    v6          d4             d5
+                                                                 v7    v8       v9    v10
 END
 }
 
