@@ -39,25 +39,26 @@ sub new($)                                                                      
   push @$stack, $t;                                                             # Save newly created term on the stack
  }
 
-sub LexicalCode($$$)                                                            #P Lexical code definition
- {my ($letter, $next, $name) = @_;                                              # Letter used to refer to the lexical item, letters of items that can follow this lexical item, descriptive name of lexical item
+sub LexicalCode($$$$)                                                           #P Lexical code definition
+ {my ($letter, $next, $name, $short) = @_;                                      # Letter used to refer to the lexical item, letters of items that can follow this lexical item, descriptive name of lexical item, short name
   genHash(q(Tree::Term::LexicalCode),                                           # Lexical item codes.
     letter => $letter,                                                          # Letter code used to refer to the lexical item.
     next   => $next,                                                            # Letters codes of items that can follow this lexical item.
     name   => $name,                                                            # Descriptive name of lexical item.
+    short  => $short,                                                           # Short name of lexical item.
    );
  }
 
 my $LexicalCodes = genHash(q(Tree::Term::Codes),                                # Lexical item codes.
-  a => LexicalCode('a', 'bpv',   'assignment operator'),                        # Infix operator with priority 2 binding right to left typically used in an assignment.
-  b => LexicalCode('b', 'bBpsv', 'opening parenthesis'),                        # Opening parenthesis.
-  B => LexicalCode('B', 'aBdqs', 'closing parenthesis'),                        # Closing parenthesis.
-  d => LexicalCode('d', 'bpv',   'dyadic operator'),                            # Infix operator with priority 3 binding left to right typically used in arithmetic.
-  p => LexicalCode('p', 'bpv',   'prefix operator'),                            # Monadic prefix operator.
-  q => LexicalCode('q', 'aBdqs', 'suffix operator'),                            # Monadic suffix operator.
-  s => LexicalCode('s', 'bBpsv', 'semi-colon'),                                 # Infix operator with priority 1 binding left to right typically used to separate statements.
-  t => LexicalCode('t', 'aBdqs', 'term'),                                       # A term in the expression.
-  v => LexicalCode('v', 'aBdqs', 'variable'),                                   # A variable in the expression.
+  a => LexicalCode('a', 'bpv',   q(assignment operator), qq(assign)),           # Infix operator with priority 2 binding right to left typically used in an assignment.
+  b => LexicalCode('b', 'bBpsv', q(opening parenthesis), qq(OpenBracket)),      # Opening parenthesis.
+  B => LexicalCode('B', 'aBdqs', q(closing parenthesis), qq(CloseBracket)),     # Closing parenthesis.
+  d => LexicalCode('d', 'bpv',   q(dyadic operator),     qq(dyad)),             # Infix operator with priority 3 binding left to right typically used in arithmetic.
+  p => LexicalCode('p', 'bpv',   q(prefix operator),     qq(prefix)),           # Monadic prefix operator.
+  q => LexicalCode('q', 'aBdqs', q(suffix operator),     qq(suffix)),           # Monadic suffix operator.
+  s => LexicalCode('s', 'bBpsv', q(semi-colon),          qq(semiColon)),        # Infix operator with priority 1 binding left to right typically used to separate statements.
+  t => LexicalCode('t', 'aBdqs', q(term),                qq(term)),             # A term in the expression.
+  v => LexicalCode('v', 'aBdqs', q(variable),            qq(variable)),         # A variable in the expression.
  );
 
 my $first = 'bpsv';                                                             # First element
@@ -2067,15 +2068,15 @@ if (1) {                                                                        
 is_deeply LexicalStructure,                                                     #TLexicalStructure
 bless({
   codes => bless({
-             a => bless({ letter => "a", name => "assignment operator", next => "bpv" },   "Tree::Term::LexicalCode"),
-             b => bless({ letter => "b", name => "opening parenthesis", next => "bBpsv" }, "Tree::Term::LexicalCode"),
-             B => bless({ letter => "B", name => "closing parenthesis", next => "aBdqs" }, "Tree::Term::LexicalCode"),
-             d => bless({ letter => "d", name => "dyadic operator",     next => "bpv" },   "Tree::Term::LexicalCode"),
-             p => bless({ letter => "p", name => "prefix operator",     next => "bpv" },   "Tree::Term::LexicalCode"),
-             q => bless({ letter => "q", name => "suffix operator",     next => "aBdqs" }, "Tree::Term::LexicalCode"),
-             s => bless({ letter => "s", name => "semi-colon",          next => "bBpsv" }, "Tree::Term::LexicalCode"),
-             t => bless({ letter => "t", name => "term",                next => "aBdqs" }, "Tree::Term::LexicalCode"),
-             v => bless({ letter => "v", name => "variable",            next => "aBdqs" }, "Tree::Term::LexicalCode"),
+             a => bless({ letter => "a", name => "assignment operator", short=> qq(assign),       next => "bpv" },   "Tree::Term::LexicalCode"),
+             b => bless({ letter => "b", name => "opening parenthesis", short=> qq(OpenBracket),  next => "bBpsv" }, "Tree::Term::LexicalCode"),
+             B => bless({ letter => "B", name => "closing parenthesis", short=> qq(CloseBracket), next => "aBdqs" }, "Tree::Term::LexicalCode"),
+             d => bless({ letter => "d", name => "dyadic operator",     short=> qq(dyad),         next => "bpv" },   "Tree::Term::LexicalCode"),
+             p => bless({ letter => "p", name => "prefix operator",     short=> qq(prefix),       next => "bpv" },   "Tree::Term::LexicalCode"),
+             q => bless({ letter => "q", name => "suffix operator",     short=> qq(suffix),       next => "aBdqs" }, "Tree::Term::LexicalCode"),
+             s => bless({ letter => "s", name => "semi-colon",          short=> qq(semiColon),    next => "bBpsv" }, "Tree::Term::LexicalCode"),
+             t => bless({ letter => "t", name => "term",                short=> qq(term),         next => "aBdqs" }, "Tree::Term::LexicalCode"),
+             v => bless({ letter => "v", name => "variable",            short=> qq(variable),     next => "aBdqs" }, "Tree::Term::LexicalCode"),
            }, "Tree::Term::Codes"),
   first => "bpsv",
   last  => "Bqsv",
