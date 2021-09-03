@@ -6,7 +6,7 @@
 # podDocumentation
 package Tree::Term;
 use v5.26;
-our $VERSION = 20210810;                                                        # Version
+our $VERSION = 20210828;                                                        # Version
 use warnings FATAL => qw(all);
 use strict;
 use Carp qw(confess cluck);
@@ -23,7 +23,7 @@ our %follows;                                                                   
 our %first;                                                                     # Lexical elements that can come first
 our %last;                                                                      # Lexical elements that can come last
 
-sub new($)                                                                      #P Create a new term from the indicated number of items on top of the stack
+sub new($)                                                                      #P Create a new term from the indicated number of items on top of the stack.
  {my ($count) = @_;                                                             # Number of terms
 
   @$stack >= $count or confess "Stack underflow";
@@ -41,7 +41,7 @@ sub new($)                                                                      
   push @$stack, $t;                                                             # Save newly created term on the stack
  }
 
-sub LexicalCode($$$$)                                                           #P Lexical code definition
+sub LexicalCode($$$$)                                                           #P Lexical code definition.
  {my ($letter, $next, $name, $short) = @_;                                      # Letter used to refer to the lexical item, letters of items that can follow this lexical item, descriptive name of lexical item, short name
   genHash(q(Tree::Term::LexicalCode),                                           # Lexical item codes.
     letter => $letter,                                                          # Letter code used to refer to the lexical item.
@@ -74,19 +74,19 @@ sub LexicalStructure()                                                          
    );
  }
 
-sub type($)                                                                     #P Type of term
+sub type($)                                                                     #P Type of term.
  {my ($s) = @_;                                                                 # Term to test
   return 't' if ref $s;                                                         # Term on top of stack
   substr($s, 0, 1);                                                             # Something other than a term defines its type by its first letter
  }
 
-sub expandElement($)                                                            #P Describe a lexical element
+sub expandElement($)                                                            #P Describe a lexical element.
  {my ($e) = @_;                                                                 # Element to expand
   my $x = $LexicalCodes->{type $e}->name;                                       # Expansion
    "'$x': $e"
  }
 
-sub expandCodes($)                                                              #P Expand a string of codes
+sub expandCodes($)                                                              #P Expand a string of codes.
  {my ($e) = @_;                                                                 # Codes to expand
   my @c = map {qq('$_')} sort map {$LexicalCodes->{$_}->name} split //, $e;     # Codes  for next possible items
   my $c = pop @c;
@@ -94,13 +94,13 @@ sub expandCodes($)                                                              
   "$t or $c"
  }
 
-sub expected($)                                                                 #P String of next possible lexical items
+sub expected($)                                                                 #P String of next possible lexical items.
  {my ($s) = @_;                                                                 # Lexical item
   my $e = expandCodes $LexicalCodes->{type $s}->next;                           # Codes for next possible items
   "Expected: $e"
  }
 
-sub unexpected($$$)                                                             #P Complain about an unexpected element
+sub unexpected($$$)                                                             #P Complain about an unexpected element.
  {my ($element, $unexpected, $position) = @_;                                   # Last good element, unexpected element, position
   my $j = $position + 1;
   my $E = expandElement $unexpected;
@@ -224,16 +224,16 @@ END
    }
  }
 
-sub test_t($)                                                                   #P Check that we have a term
+sub test_t($)                                                                   #P Check that we have a term.
  {my ($item) = @_;                                                              # Item to test
   ref $item
  }
 
-sub reduce($)                                                                   #P Reduce the stack at the specified priority
+sub reduce($)                                                                   #P Reduce the stack at the specified priority.
  {my ($priority) = @_;                                                          # Priority
   #lll "Reduce at $priority: ", scalar(@s), "\n", dump([@s]);
 
-  if (@$stack >= 3)                                                             # term infix-operator term
+  if (@$stack >= 3)                                                             # Term infix-operator term
    {my ($l, $d, $r) = ($$stack[-3], $$stack[-2], $$stack[-1]);                  # Left infix right
 
     if     (test_t($l))                                                         # Parse out infix operator expression
@@ -287,30 +287,30 @@ sub reduce($)                                                                   
   0                                                                             # No move made
  }
 
-sub reduce1()                                                                   #P Reduce the stack at priority 1
+sub reduce1()                                                                   #P Reduce the stack at priority 1.
  {reduce 1;
  }
 
-sub reduce2()                                                                   #P Reduce the stack at priority 2
+sub reduce2()                                                                   #P Reduce the stack at priority 2.
  {reduce 2;
  }
 
-sub pushElement()                                                               #P Push an element
+sub pushElement()                                                               #P Push an element.
  {push @$stack, $$expression[$position];
  }
 
-sub accept_a()                                                                  #P Assign
+sub accept_a()                                                                  #P Assign.
  {check_t;
   1 while reduce2;
   pushElement;
  }
 
-sub accept_b()                                                                  #P Open
+sub accept_b()                                                                  #P Open.
  {check_abdps;
   pushElement;
  }
 
-sub accept_B()                                                                  #P Closing parenthesis
+sub accept_B()                                                                  #P Closing parenthesis.
  {check_bst;
   1 while reduce1;
   pushElement;
@@ -318,17 +318,17 @@ sub accept_B()                                                                  
   check_bst;
  }
 
-sub accept_d()                                                                  #P Infix but not assign or semi-colon
+sub accept_d()                                                                  #P Infix but not assign or semi-colon.
  {check_t;
   pushElement;
  }
 
-sub accept_p()                                                                  #P Prefix
+sub accept_p()                                                                  #P Prefix.
  {check_abdps;
   pushElement;
  }
 
-sub accept_q()                                                                  #P Post fix
+sub accept_q()                                                                  #P Post fix.
  {check_t;
   my $p = pop @$stack;
   pushElement;
@@ -336,7 +336,7 @@ sub accept_q()                                                                  
   new 2;
  }
 
-sub accept_s()                                                                  #P Semi colon
+sub accept_s()                                                                  #P Semi colon.
  {check_bst;
   if (!test_t($$stack[-1]))                                                     # Insert an empty element between two consecutive semicolons
    {push @$stack, 'empty1';
@@ -346,7 +346,7 @@ sub accept_s()                                                                  
   pushElement;
  }
 
-sub accept_v()                                                                  #P Variable
+sub accept_v()                                                                  #P Variable.
  {check_abdps;
   pushElement;
   new 1;
@@ -453,7 +453,7 @@ sub depth($)                                                                    
   $d
  }
 
-sub listTerms($)                                                                #P List the terms in an expression in post order
+sub listTerms($)                                                                #P List the terms in an expression in post order.
  {my ($expression) = @_;                                                        # Root term
   my @t;                                                                        # Terms
 
@@ -503,7 +503,7 @@ sub flat($@)                                                                    
   for my $t(@t)                                                                 # Traverse tree
    {my $d = $t->depth;
     my $p = $t->operator;                                                       # Operator
-    my $P = $p =~ s(\A\w+?_) ()gsr;                                              # Remove leading type character if followed by underscore as this make for clearer results
+    my $P = $p =~ s(\A\w+?_) ()gsr;                                             # Remove leading type character if followed by underscore as this make for clearer results
 
     align if $p =~ m(\A(a|d|s));                                                # Shift over for some components
 
@@ -588,7 +588,7 @@ END
 Create a parse tree from an array of terms representing an expression.
 
 
-Version 20210724.
+Version 20210827.
 
 
 The following sections describe the methods in each functional area of this
@@ -653,7 +653,8 @@ B<Example:>
                    v1    v2         plus                  then
                                  v3      v4         ==                     else
                                                  v5    v6         minus            times
-                                                               v7       v8      v9           +
+                                                               v7       v8      v9             bB
+                                                                                             +
                                                                                          v10   v11
   END
   }
@@ -732,23 +733,30 @@ B<Example:>
   END
 
   ok T [qw(b B)], <<END;
-   empty1
+   bB
   END
 
   ok T [qw(b b B B)], <<END;
-   empty1
+      bB
+   bB
   END
 
   ok T [qw(b b v1 B B)], <<END;
+      bB
+   bB
    v1
   END
 
   ok T [qw(b b v1 a2 v3 B B)], <<END;
+            bB
+         bB
       a2
    v1    v3
   END
 
   ok T [qw(b b v1 a2 v3 d4 v5 B B)], <<END;
+                  bB
+               bB
       a2
    v1       d4
          v3    v5
@@ -804,10 +812,12 @@ B<Example:>
   END
 
   ok T [qw(b s B)], <<END;
+          bB
    empty1
   END
 
   ok T [qw(b s s B)], <<END;
+                   bB
           s
    empty1   empty1
   END
@@ -817,10 +827,10 @@ B<Example:>
 
    my @e = qw(b b p2 p1 v1 q1 q2 B d3 b p4 p3 v2 q3 q4 d4 p6 p5 v3 q5 q6 B s B s);
 
-
-   is_deeply parse(@e)->flat, <<END;  # 𝗘𝘅𝗮𝗺𝗽𝗹𝗲
-
+   ok T [@e], <<END;
+                  bB
       d3
+   bB          bB
    q2       d4
    q1    q4    q6
    p2    q3    q5
@@ -832,6 +842,8 @@ B<Example:>
   }
 
   ok T [qw(b b v1 B s B s)], <<END;
+      bB
+   bB
    v1
   END
 
@@ -841,18 +853,21 @@ B<Example:>
   END
 
   ok T [qw(b b v1 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
-   q6
-   q5
-   q4
-   q3
+         q6
+         q5
+      bB
+      q4
+      q3
+   bB
    q2
    q1
    v1
   END
 
   ok T [qw(p1 p2 b v1 B)], <<END;
-   p1
-   p2
+      p1
+      p2
+   bB
    v1
   END
 
@@ -864,14 +879,16 @@ B<Example:>
   END
 
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 d1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
-         q6
-         q5
-         p1
-         p2
-         q4
-         q3
-         p3
-         p4
+               q6
+               q5
+               p1
+               p2
+            bB
+            q4
+            q3
+            p3
+            p4
+         bB
       d1
    p5    q2
    p6    q1
@@ -879,14 +896,16 @@ B<Example:>
   END
 
   ok T [qw(p1 p2 b p3 p4 b p5 p6 v1 a1 v2 q1 q2 B q3 q4 s B q5 q6  s)], <<END;
-         q6
-         q5
-         p1
-         p2
-         q4
-         q3
-         p3
-         p4
+               q6
+               q5
+               p1
+               p2
+            bB
+            q4
+            q3
+            p3
+            p4
+         bB
       a1
    p5    q2
    p6    q1
@@ -895,13 +914,15 @@ B<Example:>
 
   ok T [qw(b v1 B d1 b v2 B)], <<END;
       d1
+   bB    bB
    v1    v2
   END
 
   ok T [qw(b v1 B q1 q2 d1 b v2 B)], <<END;
-      d1
-   q2    v2
-   q1
+         d1
+      q2    bB
+      q1    v2
+   bB
    v1
   END
 
@@ -916,29 +937,37 @@ B<Example:>
 
   ok T [qw(v1 s b s B)], <<END;
       s
-   v1   empty1
+   v1          bB
+        empty1
   END
 
   ok T [qw(v1 s b b s s B B)], <<END;
       s
-   v1          s
+   v1                      bB
+                        bB
+               s
         empty1   empty1
   END
 
   ok T [qw(b v1 s B s s)], <<END;
       s
-   v1   empty1
+   bB   empty1
+   v1
   END
 
   ok T [qw(v1 a b1 b2 v2 B2 B1 s)], <<END;
       a
-   v1   v2
+   v1        b1B1
+        b2B2
+        v2
   END
 
   ok T [qw(v1 a1 b1 v2 a2 b2 v3 B2 B1 s)], <<END;
       a1
-   v1       a2
-         v2    v3
+   v1               b1B1
+            a2
+         v2    b2B2
+               v3
   END
 
   ok T [qw(v1 a1 p1 v2)], <<END;
@@ -948,26 +977,30 @@ B<Example:>
   END
 
   ok T [qw(b1 v1 q1 q2 B1)], <<END;
+   b1B1
    q2
    q1
    v1
   END
 
   ok T [qw(b1 v1 q1 q2 s B1)], <<END;
+   b1B1
    q2
    q1
    v1
   END
 
   ok T [qw(p1 b1 v1 B1 q1)], <<END;
-   q1
-   p1
+        q1
+        p1
+   b1B1
    v1
   END
 
   ok T [qw(b1 v1 B1 a1 v2)], <<END;
-      a1
-   v1    v2
+        a1
+   b1B1    v2
+   v1
   END
 
   ok T [qw(v1 q1 a1 v2)], <<END;
@@ -1172,6 +1205,10 @@ Descriptive name of lexical item.
 
 Letters codes of items that can follow this lexical item.
 
+=head4 short
+
+Short name of lexical item.
+
 
 
 =head2 Tree::Term::LexicalStructure Definition
@@ -1203,51 +1240,52 @@ Lexical items we can end with
 
 =head2 new($count)
 
-Create a new term from the indicated number of items on top of the stack
+Create a new term from the indicated number of items on top of the stack.
 
      Parameter  Description
   1  $count     Number of terms
 
-=head2 LexicalCode($letter, $next, $name)
+=head2 LexicalCode($letter, $next, $name, $short)
 
-Lexical code definition
+Lexical code definition.
 
      Parameter  Description
   1  $letter    Letter used to refer to the lexical item
   2  $next      Letters of items that can follow this lexical item
   3  $name      Descriptive name of lexical item
+  4  $short     Short name
 
 =head2 type($s)
 
-Type of term
+Type of term.
 
      Parameter  Description
   1  $s         Term to test
 
 =head2 expandElement($e)
 
-Describe a lexical element
+Describe a lexical element.
 
      Parameter  Description
   1  $e         Element to expand
 
 =head2 expandCodes($e)
 
-Expand a string of codes
+Expand a string of codes.
 
      Parameter  Description
   1  $e         Codes to expand
 
 =head2 expected($s)
 
-String of next possible lexical items
+String of next possible lexical items.
 
      Parameter  Description
   1  $s         Lexical item
 
 =head2 unexpected($element, $unexpected, $position)
 
-Complain about an unexpected element
+Complain about an unexpected element.
 
      Parameter    Description
   1  $element     Last good element
@@ -1268,71 +1306,71 @@ Check that we have XXXX
 
 =head2 test_t($item)
 
-Check that we have a term
+Check that we have a term.
 
      Parameter  Description
   1  $item      Item to test
 
 =head2 reduce($priority)
 
-Reduce the stack at the specified priority
+Reduce the stack at the specified priority.
 
      Parameter  Description
   1  $priority  Priority
 
 =head2 reduce1()
 
-Reduce the stack at priority 1
+Reduce the stack at priority 1.
 
 
 =head2 reduce2()
 
-Reduce the stack at priority 2
+Reduce the stack at priority 2.
 
 
 =head2 pushElement()
 
-Push an element
+Push an element.
 
 
 =head2 accept_a()
 
-Assign
+Assign.
 
 
 =head2 accept_b()
 
-Open
+Open.
 
 
 =head2 accept_B()
 
-Closing parenthesis
+Closing parenthesis.
 
 
 =head2 accept_d()
 
-Infix but not assign or semi-colon
+Infix but not assign or semi-colon.
 
 
 =head2 accept_p()
 
-Prefix
+Prefix.
 
 
 =head2 accept_q()
 
-Post fix
+Post fix.
 
 
 =head2 accept_s()
 
-Semi colon
+Semi colon.
 
 
 =head2 accept_v()
 
-Variable
+Variable.
 
 
 =head2 parseExpression()
@@ -1349,7 +1387,7 @@ Depth of a term in an expression.
 
 =head2 listTerms($expression)
 
-List the terms in an expression in post order
+List the terms in an expression in post order.
 
      Parameter    Description
   1  $expression  Root term
@@ -1358,63 +1396,63 @@ List the terms in an expression in post order
 =head1 Index
 
 
-1 L<accept_a|/accept_a> - Assign
+1 L<accept_a|/accept_a> - Assign.
 
-2 L<accept_B|/accept_B> - Closing parenthesis
+2 L<accept_B|/accept_B> - Closing parenthesis.
 
-3 L<accept_b|/accept_b> - Open
+3 L<accept_b|/accept_b> - Open.
 
-4 L<accept_d|/accept_d> - Infix but not assign or semi-colon
+4 L<accept_d|/accept_d> - Infix but not assign or semi-colon.
 
-5 L<accept_p|/accept_p> - Prefix
+5 L<accept_p|/accept_p> - Prefix.
 
-6 L<accept_q|/accept_q> - Post fix
+6 L<accept_q|/accept_q> - Post fix.
 
-7 L<accept_s|/accept_s> - Semi colon
+7 L<accept_s|/accept_s> - Semi colon.
 
-8 L<accept_v|/accept_v> - Variable
+8 L<accept_v|/accept_v> - Variable.
 
 9 L<check_XXXX|/check_XXXX> - Check that the top of the stack has one of XXXX
 
 10 L<depth|/depth> - Depth of a term in an expression.
 
-11 L<expandCodes|/expandCodes> - Expand a string of codes
+11 L<expandCodes|/expandCodes> - Expand a string of codes.
 
-12 L<expandElement|/expandElement> - Describe a lexical element
+12 L<expandElement|/expandElement> - Describe a lexical element.
 
-13 L<expected|/expected> - String of next possible lexical items
+13 L<expected|/expected> - String of next possible lexical items.
 
 14 L<flat|/flat> - Print the terms in the expression as a tree from left right to make it easier to visualize the structure of the tree.
 
-15 L<LexicalCode|/LexicalCode> - Lexical code definition
+15 L<LexicalCode|/LexicalCode> - Lexical code definition.
 
 16 L<LexicalStructure|/LexicalStructure> - Return the lexical codes and their relationships in a data structure so this information can be used in other contexts.
 
-17 L<listTerms|/listTerms> - List the terms in an expression in post order
+17 L<listTerms|/listTerms> - List the terms in an expression in post order.
 
-18 L<new|/new> - Create a new term from the indicated number of items on top of the stack
+18 L<new|/new> - Create a new term from the indicated number of items on top of the stack.
 
 19 L<parse|/parse> - Parse an expression.
 
 20 L<parseExpression|/parseExpression> - Parse an expression.
 
-21 L<pushElement|/pushElement> - Push an element
+21 L<pushElement|/pushElement> - Push an element.
 
-22 L<reduce|/reduce> - Reduce the stack at the specified priority
+22 L<reduce|/reduce> - Reduce the stack at the specified priority.
 
-23 L<reduce1|/reduce1> - Reduce the stack at priority 1
+23 L<reduce1|/reduce1> - Reduce the stack at priority 1.
 
-24 L<reduce2|/reduce2> - Reduce the stack at priority 2
+24 L<reduce2|/reduce2> - Reduce the stack at priority 2.
 
 25 L<syntaxError|/syntaxError> - Check the syntax of an expression without parsing it.
 
-26 L<test_t|/test_t> - Check that we have a term
+26 L<test_t|/test_t> - Check that we have a term.
 
 27 L<test_XXXX|/test_XXXX> - Check that we have XXXX
 
-28 L<type|/type> - Type of term
+28 L<type|/type> - Type of term.
 
-29 L<unexpected|/unexpected> - Complain about an unexpected element
+29 L<unexpected|/unexpected> - Complain about an unexpected element.
 
 30 L<validPair|/validPair> - Confirm that the specified pair of lexical elements can occur as a sequence.
 
@@ -1459,7 +1497,7 @@ test unless caller;
 
 1;
 # podDocumentation
-#__DATA__
+__DATA__
 use Time::HiRes qw(time);
 use Test::More;
 
@@ -1476,7 +1514,7 @@ else
  {plan skip_all =>qq(Not supported on: $^O);
  }
 
-sub T                                                                           #P Test a parse
+sub T                                                                           #P Test a parse.
  {my ($expression, $expected) = @_;                                             # Expression, expected result
   syntaxError @$expression;                                                     # Syntax check without creating parse tree
   my $g = parse(@$expression)->flat;
@@ -1486,7 +1524,7 @@ sub T                                                                           
   $r
  }
 
-sub E($)                                                                        #P Test a parse error
+sub E($)                                                                        #P Test a parse error.
  {my ($text) = @_;
   my ($test, $parse, $syntax) = split /\n/,  $text;                             # Parse test description
 
